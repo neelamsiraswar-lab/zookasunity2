@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Products catalog
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Distiller Inventory Lots
+    match /inventory/{lotId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+
+    // Blog Articles & Notes
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Site CMS Content (Home, About, Settings)
+    match /site_content/{contentId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Customer Accounts
+    match /customers/{customerId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "products": {
+      "title": "Spirit Product Catalog",
+      "description": "Artisanal spirits catalog with real-time stock, pricing, and tasting notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "tagline": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "abv": { "type": "string" },
+        "proof": { "type": "number" },
+        "bottleSize": { "type": "string" },
+        "batchNumber": { "type": "string" },
+        "caskNumber": { "type": "string" },
+        "caskType": { "type": "string" },
+        "stockQuantity": { "type": "number" },
+        "lowStockThreshold": { "type": "number" },
+        "distillerName": { "type": "string" },
+        "distillerOrigin": { "type": "string" },
+        "description": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "featured": { "type": "boolean" },
+        "isLimitedRelease": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "releaseYear": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "category", "price", "stockQuantity"]
+    },
+    "inventory": {
+      "title": "Distiller Inventory & Cask Batches",
+      "description": "Real-time distiller barrel inventory tracking and aging status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "caskLotNumber": { "type": "string" },
+        "barrelType": { "type": "string" },
+        "barrelStartDate": { "type": "string" },
+        "currentProof": { "type": "number" },
+        "warehouseLocation": { "type": "string" },
+        "status": { "type": "string" },
+        "bottlesInStock": { "type": "number" },
+        "targetStock": { "type": "number" },
+        "restockLeadDays": { "type": "number" },
+        "distillerNotes": { "type": "string" },
+        "lastInspectedDate": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "productId", "productName", "bottlesInStock", "status"]
+    },
+    "orders": {
+      "title": "Customer Orders",
+      "description": "Customer purchase orders and status updates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "orderNumber": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" },
+        "items": { "type": "array" },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "giftBoxFee": { "type": "number" },
+        "shipping": { "type": "number" },
+        "tax": { "type": "number" },
+        "total": { "type": "number" },
+        "payment": { "type": "object" },
+        "shippingAddress": { "type": "object" },
+        "trackingNumber": { "type": "string" },
+        "carrier": { "type": "string" },
+        "ageConfirmed": { "type": "boolean" },
+        "loyaltyPointsEarned": { "type": "number" },
+        "loyaltyPointsUsed": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "orderNumber", "date", "status", "total"]
+    },
+    "blog_posts": {
+      "title": "Distillery Blog & Field Notes",
+      "description": "Distillery stories, cocktail recipes, and connoisseur discussions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "excerpt": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "author": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "date": { "type": "string" },
+        "readTime": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "comments": { "type": "array" },
+        "likes": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "category"]
+    },
+    "site_content": {
+      "title": "Site CMS Content",
+      "description": "CMS settings, carousel slides, heritage chronology, and guiding principles",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string" },
+        "data": { "type": "object" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["type", "data"]
+    },
+    "customers": {
+      "title": "Customer Profiles & Loyalty",
+      "description": "Customer account, addresses, loyalty points, and tier status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "loyaltyPoints": { "type": "number" },
+        "loyaltyTier": { "type": "string" },
+        "totalSpent": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "email"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "products",
+      "description": "Product documents"
+    },
+    "/inventory/{lotId}": {
+      "schema": "inventory",
+      "description": "Inventory lots"
+    },
+    "/orders/{orderId}": {
+      "schema": "orders",
+      "description": "Order records"
+    },
+    "/blog_posts/{postId}": {
+      "schema": "blog_posts",
+      "description": "Distillery blog articles"
+    },
+    "/site_content/{contentId}": {
+      "schema": "site_content",
+      "description": "Singleton CMS contents (home, about, settings)"
+    },
+    "/customers/{customerId}": {
+      "schema": "customers",
+      "description": "Customer profiles and reward points"
+    }
+  }
+}

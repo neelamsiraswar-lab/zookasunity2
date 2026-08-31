@@ -1,0 +1,468 @@
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  getDocFromServer,
+  getDocs, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  orderBy,
+  writeBatch,
+  Unsubscribe,
+  serverTimestamp
+} from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
+import firebaseConfigData from '../../firebase-applet-config.json';
+import { 
+  SpiritProduct, 
+  DistillerInventoryItem, 
+  Order, 
+  BlogPost, 
+  HomeContent, 
+  AboutContent, 
+  AdminSettings, 
+  CustomerUser,
+  HeaderCustomizationConfig,
+  FooterCustomizationConfig
+} from '../types';
+
+// Initialize Firebase App
+export const app = !getApps().length ? initializeApp(firebaseConfigData) : getApp();
+
+// Initialize Firestore with specific database ID if provided, matching standard SDK pattern
+export const db = firebaseConfigData.firestoreDatabaseId && firebaseConfigData.firestoreDatabaseId !== '(default)'
+  ? getFirestore(app, firebaseConfigData.firestoreDatabaseId)
+  : getFirestore(app);
+
+// Initialize Firebase Auth
+export const auth = getAuth(app);
+
+// Initialize Firebase Storage
+export const storage = getStorage(app);
+
+// Standard Firestore Error Handling Structure from Firebase Skill
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  };
+}
+
+export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): FirestoreErrorInfo {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  // Log structured diagnostic without crashing application
+  console.warn('Firestore Operation Info:', JSON.stringify(errInfo));
+  return errInfo;
+}
+
+// Validate connection to Firestore as mandated by Firebase Skill
+export const testFirestoreConnection = async (): Promise<boolean> => {
+  try {
+    await getDocFromServer(doc(db, 'products', '__ping__'));
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('the client is offline')) {
+      console.warn('Firestore offline fallback active: Check your Firebase connection or online status.');
+    }
+    return false;
+  }
+};
+// Test connection on boot
+testFirestoreConnection().catch(() => {});
+
+// Collections Enum / Constants
+export const COLLECTIONS = {
+  PRODUCTS: 'products',
+  INVENTORY: 'inventory',
+  ORDERS: 'orders',
+  BLOG_POSTS: 'blog_posts',
+  SITE_CONTENT: 'site_content',
+  CUSTOMERS: 'customers'
+} as const;
+
+// Storage helper: Upload Image (File or Data URL) to Cloud Storage with fallback
+export const uploadImageToCloudStorage = async (
+  fileOrBase64: File | string,
+  pathFolder: 'products' | 'carousel' | 'heritage' | 'blog' | 'casks' = 'products'
+): Promise<string> => {
+  try {
+    const filename = `${pathFolder}/${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const storageRef = ref(storage, filename);
+
+    if (typeof fileOrBase64 === 'string') {
+      if (fileOrBase64.startsWith('data:')) {
+        await uploadString(storageRef, fileOrBase64, 'data_url');
+        const downloadUrl = await getDownloadURL(storageRef);
+        return downloadUrl;
+      }
+      return fileOrBase64; // Already a URL
+    } else {
+      await uploadBytes(storageRef, fileOrBase64);
+      const downloadUrl = await getDownloadURL(storageRef);
+      return downloadUrl;
+    }
+  } catch (err) {
+    console.warn('Cloud Storage upload note (falling back to direct optimized URL/dataURI):', err);
+    if (typeof fileOrBase64 === 'string') {
+      return fileOrBase64;
+    }
+    // Fallback: convert file to Base64
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(fileOrBase64);
+    });
+  }
+};
+
+// ==========================================
+// REAL-TIME FIRESTORE CRUD OPERATIONS
+// ==========================================
+
+// --- PRODUCTS ---
+export const saveCloudProduct = async (product: SpiritProduct): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.PRODUCTS, product.id);
+    await setDoc(docRef, { ...product, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.PRODUCTS}/${product.id}`);
+  }
+};
+
+export const deleteCloudProduct = async (productId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.PRODUCTS, productId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.PRODUCTS}/${productId}`);
+  }
+};
+
+export const subscribeToCloudProducts = (callback: (products: SpiritProduct[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.PRODUCTS));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: SpiritProduct[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as SpiritProduct);
+      });
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.PRODUCTS);
+  });
+};
+
+// --- INVENTORY ---
+export const saveCloudInventoryLot = async (lot: DistillerInventoryItem): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.INVENTORY, lot.id);
+    await setDoc(docRef, { ...lot, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.INVENTORY}/${lot.id}`);
+  }
+};
+
+export const deleteCloudInventoryLot = async (lotId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.INVENTORY, lotId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.INVENTORY}/${lotId}`);
+  }
+};
+
+export const subscribeToCloudInventory = (callback: (lots: DistillerInventoryItem[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.INVENTORY));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: DistillerInventoryItem[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as DistillerInventoryItem);
+      });
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.INVENTORY);
+  });
+};
+
+// --- ORDERS ---
+export const saveCloudOrder = async (order: Order): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.ORDERS, order.id);
+    await setDoc(docRef, { ...order, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.ORDERS}/${order.id}`);
+  }
+};
+
+export const deleteCloudOrder = async (orderId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.ORDERS, orderId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.ORDERS}/${orderId}`);
+  }
+};
+
+export const subscribeToCloudOrders = (callback: (orders: Order[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.ORDERS));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: Order[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as Order);
+      });
+      // Sort newest first
+      list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.ORDERS);
+  });
+};
+
+// --- BLOG POSTS ---
+export const saveCloudBlogPost = async (post: BlogPost): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.BLOG_POSTS, post.id);
+    await setDoc(docRef, { ...post, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.BLOG_POSTS}/${post.id}`);
+  }
+};
+
+export const deleteCloudBlogPost = async (postId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.BLOG_POSTS, postId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.BLOG_POSTS}/${postId}`);
+  }
+};
+
+export const subscribeToCloudBlogPosts = (callback: (posts: BlogPost[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.BLOG_POSTS));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: BlogPost[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as BlogPost);
+      });
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.BLOG_POSTS);
+  });
+};
+
+// --- SITE CONTENT (Home, About, Settings, Header, Footer) ---
+export const saveCloudSiteContent = async (key: 'home' | 'about' | 'settings' | 'header' | 'footer', data: any): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.SITE_CONTENT, key);
+    await setDoc(docRef, { data, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.SITE_CONTENT}/${key}`);
+  }
+};
+
+export const subscribeToCloudSiteContent = (
+  callback: (contents: { 
+    home?: HomeContent; 
+    about?: AboutContent; 
+    settings?: AdminSettings; 
+    header?: HeaderCustomizationConfig; 
+    footer?: FooterCustomizationConfig;
+  }) => void
+): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.SITE_CONTENT));
+  return onSnapshot(q, (snapshot) => {
+    const result: { 
+      home?: HomeContent; 
+      about?: AboutContent; 
+      settings?: AdminSettings; 
+      header?: HeaderCustomizationConfig; 
+      footer?: FooterCustomizationConfig;
+    } = {};
+    snapshot.forEach(docSnap => {
+      const id = docSnap.id;
+      const data = docSnap.data()?.data;
+      if (id === 'home') result.home = data;
+      if (id === 'about') result.about = data;
+      if (id === 'settings') result.settings = data;
+      if (id === 'header') result.header = data;
+      if (id === 'footer') result.footer = data;
+    });
+    callback(result);
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.SITE_CONTENT);
+  });
+};
+
+// --- CUSTOMER PROFILE ---
+export const saveCloudCustomer = async (customer: CustomerUser): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.CUSTOMERS, customer.id);
+    await setDoc(docRef, { ...customer, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.CUSTOMERS}/${customer.id}`);
+  }
+};
+
+export const getCloudCustomer = async (customerId: string): Promise<CustomerUser | null> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.CUSTOMERS, customerId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data() as CustomerUser;
+    }
+    return null;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.GET, `${COLLECTIONS.CUSTOMERS}/${customerId}`);
+    return null;
+  }
+};
+
+export const subscribeToCloudCustomer = (customerId: string, callback: (customer: CustomerUser | null) => void): Unsubscribe => {
+  const docRef = doc(db, COLLECTIONS.CUSTOMERS, customerId);
+  return onSnapshot(docRef, (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data() as CustomerUser);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.GET, `${COLLECTIONS.CUSTOMERS}/${customerId}`);
+  });
+};
+
+// --- SEEDING & CLOUD SYNC BOOTSTRAPPER ---
+export const seedInitialCloudDatabase = async (initialData: {
+  products: SpiritProduct[];
+  inventory: DistillerInventoryItem[];
+  orders: Order[];
+  blogPosts: BlogPost[];
+  homeContent: HomeContent;
+  aboutContent: AboutContent;
+  adminSettings: AdminSettings;
+  customer: CustomerUser;
+  headerConfig?: HeaderCustomizationConfig;
+  footerConfig?: FooterCustomizationConfig;
+}): Promise<{ success: boolean; seededCount: number }> => {
+  try {
+    let seededCount = 0;
+    const batch = writeBatch(db);
+
+    // 1. Products
+    for (const prod of initialData.products) {
+      const pRef = doc(db, COLLECTIONS.PRODUCTS, prod.id);
+      batch.set(pRef, { ...prod, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    // 2. Inventory
+    for (const inv of initialData.inventory) {
+      const iRef = doc(db, COLLECTIONS.INVENTORY, inv.id);
+      batch.set(iRef, { ...inv, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    // 3. Orders
+    for (const ord of initialData.orders) {
+      const oRef = doc(db, COLLECTIONS.ORDERS, ord.id);
+      batch.set(oRef, { ...ord, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    // 4. Blog Posts
+    for (const bp of initialData.blogPosts) {
+      const bRef = doc(db, COLLECTIONS.BLOG_POSTS, bp.id);
+      batch.set(bRef, { ...bp, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    // 5. Site Content
+    const homeRef = doc(db, COLLECTIONS.SITE_CONTENT, 'home');
+    batch.set(homeRef, { data: initialData.homeContent, updatedAt: new Date().toISOString() }, { merge: true });
+    seededCount++;
+
+    const aboutRef = doc(db, COLLECTIONS.SITE_CONTENT, 'about');
+    batch.set(aboutRef, { data: initialData.aboutContent, updatedAt: new Date().toISOString() }, { merge: true });
+    seededCount++;
+
+    const settingsRef = doc(db, COLLECTIONS.SITE_CONTENT, 'settings');
+    batch.set(settingsRef, { data: initialData.adminSettings, updatedAt: new Date().toISOString() }, { merge: true });
+    seededCount++;
+
+    if (initialData.headerConfig) {
+      const headerRef = doc(db, COLLECTIONS.SITE_CONTENT, 'header');
+      batch.set(headerRef, { data: initialData.headerConfig, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    if (initialData.footerConfig) {
+      const footerRef = doc(db, COLLECTIONS.SITE_CONTENT, 'footer');
+      batch.set(footerRef, { data: initialData.footerConfig, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
+
+    // 6. Customer
+    const custRef = doc(db, COLLECTIONS.CUSTOMERS, initialData.customer.id);
+    batch.set(custRef, { ...initialData.customer, updatedAt: new Date().toISOString() }, { merge: true });
+    seededCount++;
+
+    await batch.commit();
+    return { success: true, seededCount };
+  } catch (err) {
+    console.error('Error seeding initial cloud database:', err);
+    throw err;
+  }
+};
