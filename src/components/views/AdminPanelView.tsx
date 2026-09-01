@@ -5,6 +5,7 @@ import { CloudImageUploader } from '../CloudImageUploader';
 import { AdminAuthLockScreen } from '../AdminAuthLockScreen';
 import { HeaderCustomizer } from '../admin/HeaderCustomizer';
 import { FooterCustomizer } from '../admin/FooterCustomizer';
+import { BottomNavCustomizer } from '../admin/BottomNavCustomizer';
 import { BallotDrawsAdmin } from '../admin/BallotDrawsAdmin';
 import { 
   SpiritProduct, 
@@ -78,7 +79,8 @@ import {
   LayoutTemplate,
   PanelBottom,
   Crown,
-  Ticket
+  Ticket,
+  Smartphone
 } from 'lucide-react';
 
 export const AdminPanelView: React.FC = () => {
@@ -137,7 +139,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_home' | 'cms_about' | 'cms_header' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_home' | 'cms_about' | 'cms_header' | 'cms_footer' | 'cms_bottom_nav' | 'cms_settings' | 'blog'>('inventory');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -932,6 +934,7 @@ export const AdminPanelView: React.FC = () => {
           { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
           { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
           { id: 'cms_header', label: 'Header & Navigation CMS', icon: LayoutTemplate },
+          { id: 'cms_bottom_nav', label: 'Bottom Navigation Bar CMS', icon: Smartphone },
           { id: 'cms_home', label: 'Home Page CMS', icon: FileEdit },
           { id: 'cms_about', label: 'About Page CMS', icon: Building2 },
           { id: 'cms_footer', label: 'Footer & Newsletter CMS', icon: PanelBottom },
@@ -2931,6 +2934,9 @@ export const AdminPanelView: React.FC = () => {
 
       {/* FOOTER & NEWSLETTER CMS */}
       {activeTab === 'cms_footer' && <FooterCustomizer />}
+
+      {/* BOTTOM NAVIGATION BAR CMS */}
+      {activeTab === 'cms_bottom_nav' && <BottomNavCustomizer />}
 
       {/* 8. BLOG MANAGER */}
       {activeTab === 'blog' && (

@@ -30,6 +30,7 @@ import {
   CustomerUser,
   HeaderCustomizationConfig,
   FooterCustomizationConfig,
+  BottomNavbarCustomizationConfig,
   ProductReview,
   BallotAllocation,
   BallotEntry
@@ -332,8 +333,8 @@ export const subscribeToCloudBlogPosts = (callback: (posts: BlogPost[]) => void)
   });
 };
 
-// --- SITE CONTENT (Home, About, Settings, Header, Footer) ---
-export const saveCloudSiteContent = async (key: 'home' | 'about' | 'settings' | 'header' | 'footer', data: any): Promise<void> => {
+// --- SITE CONTENT (Home, About, Settings, Header, Footer, Bottom Navbar) ---
+export const saveCloudSiteContent = async (key: 'home' | 'about' | 'settings' | 'header' | 'footer' | 'bottom_navbar', data: any): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTIONS.SITE_CONTENT, key);
     await setDoc(docRef, { data, updatedAt: new Date().toISOString() }, { merge: true });
@@ -349,6 +350,7 @@ export const subscribeToCloudSiteContent = (
     settings?: AdminSettings; 
     header?: HeaderCustomizationConfig; 
     footer?: FooterCustomizationConfig;
+    bottomNavbar?: BottomNavbarCustomizationConfig;
   }) => void
 ): Unsubscribe => {
   const q = query(collection(db, COLLECTIONS.SITE_CONTENT));
@@ -359,6 +361,7 @@ export const subscribeToCloudSiteContent = (
       settings?: AdminSettings; 
       header?: HeaderCustomizationConfig; 
       footer?: FooterCustomizationConfig;
+      bottomNavbar?: BottomNavbarCustomizationConfig;
     } = {};
     snapshot.forEach(docSnap => {
       const id = docSnap.id;
@@ -368,6 +371,7 @@ export const subscribeToCloudSiteContent = (
       if (id === 'settings') result.settings = data;
       if (id === 'header') result.header = data;
       if (id === 'footer') result.footer = data;
+      if (id === 'bottom_navbar') result.bottomNavbar = data;
     });
     callback(result);
   }, (err) => {

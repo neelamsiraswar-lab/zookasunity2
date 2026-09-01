@@ -22,7 +22,7 @@ const MainAppContent: React.FC = () => {
   const { activeTab, setActiveTab, adminSettings } = useStore();
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-stone-950 text-stone-100 flex flex-col selection:bg-amber-500 selection:text-stone-950 relative pb-16 md:pb-0">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-stone-950 text-stone-100 flex flex-col selection:bg-amber-500 selection:text-stone-950 relative pb-20 md:pb-0">
       {/* Global Announcement Header Bar */}
       {adminSettings.showAnnouncementBar && (
         <aside aria-label="Announcement" className="w-full max-w-full overflow-x-hidden bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-800/40 text-amber-200 text-center py-2 px-4 text-xs font-semibold tracking-wide flex items-center justify-center gap-2">

@@ -573,3 +573,55 @@ export interface FooterCustomizationConfig {
   socialLinks?: FooterSocialLink[];
   footerTheme?: 'deep_stone' | 'obsidian_gold' | 'cask_wood_dark';
 }
+
+export type BottomNavBadgeType = 'none' | 'text' | 'live' | 'cart_count' | 'allocations_count' | 'numeric' | 'dot';
+export type BottomNavDesignStyle = 
+  | 'floating_island' 
+  | 'full_width_dock' 
+  | 'glass_capsule' 
+  | 'minimal_flat' 
+  | 'luxury_gold_accent' 
+  | 'docked_glass' 
+  | 'luxury_obsidian' 
+  | 'minimal_amber' 
+  | 'royal_heritage' 
+  | 'compact_pill';
+export type BottomNavActiveIndicator = 
+  | 'top_glow_bar' 
+  | 'subtle_dot' 
+  | 'icon_pill_bg' 
+  | 'full_tab_highlight' 
+  | 'pulsing_beacon' 
+  | 'soft_pill_bg' 
+  | 'glow_dot' 
+  | 'under_line' 
+  | 'floating_pip';
+export type BottomNavAccentColor = 'amber' | 'copper' | 'emerald' | 'ruby' | 'gold' | 'silver' | 'slate';
+
+export interface BottomNavItem {
+  id: string;
+  label: string;
+  tab: AppTab | 'cart' | 'search';
+  iconName: string;
+  visible: boolean;
+  badgeType?: BottomNavBadgeType;
+  badgeText?: string;
+  badgeColor?: 'amber' | 'emerald' | 'ruby' | 'rose' | 'blue' | 'gold' | 'obsidian';
+  isCenterAction?: boolean;
+}
+
+export interface BottomNavbarCustomizationConfig {
+  enabled: boolean;
+  visibilityMode: 'mobile_only' | 'mobile_and_tablet' | 'always' | 'all_devices' | 'hidden';
+  designStyle: BottomNavDesignStyle;
+  floatingMargin: 'none' | 'small' | 'medium' | 'large';
+  backdropBlur: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  borderStyle: 'none' | 'subtle' | 'gold_glow' | 'accent_border' | 'double_gold' | 'charred_wood';
+  activeIndicatorStyle: BottomNavActiveIndicator;
+  accentColor: BottomNavAccentColor;
+  showLabels: boolean;
+  showMiniCartBar: boolean;
+  showAllocationsLivePill: boolean;
+  enableHapticGlow: boolean;
+  items: BottomNavItem[];
+}

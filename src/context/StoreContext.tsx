@@ -15,6 +15,8 @@ import {
   Address,
   HeaderCustomizationConfig,
   FooterCustomizationConfig,
+  BottomNavbarCustomizationConfig,
+  BottomNavItem,
   HeaderNavItem,
   FooterColumn,
   FooterSocialLink,
@@ -37,6 +39,7 @@ import {
   initialAdminSettings,
   initialHeaderConfig,
   initialFooterConfig,
+  initialBottomNavbarConfig,
   initialReviews,
   initialBallotAllocations,
   initialBallotEntries
@@ -149,6 +152,42 @@ export const normalizeFooterConfig = (incoming?: Partial<FooterCustomizationConf
     footerTheme: incoming.footerTheme || base.footerTheme
   };
 };
+
+export const normalizeBottomNavbarConfig = (incoming?: Partial<BottomNavbarCustomizationConfig> | null): BottomNavbarCustomizationConfig => {
+  const base = initialBottomNavbarConfig;
+  if (!incoming) return base;
+
+  const rawItems = incoming.items || base.items || [];
+  const normalizedItems: BottomNavItem[] = rawItems.map((item, idx) => ({
+    id: item.id || `bn-${idx}`,
+    label: item.label || 'Tab',
+    tab: item.tab || 'home',
+    iconName: item.iconName || 'Flame',
+    visible: item.visible !== false,
+    badgeType: item.badgeType || 'none',
+    badgeText: item.badgeText || undefined,
+    badgeColor: item.badgeColor || 'amber',
+    isCenterAction: item.isCenterAction || false
+  }));
+
+  return {
+    ...base,
+    ...incoming,
+    enabled: incoming.enabled ?? base.enabled,
+    visibilityMode: incoming.visibilityMode || base.visibilityMode,
+    designStyle: incoming.designStyle || base.designStyle,
+    floatingMargin: incoming.floatingMargin || base.floatingMargin,
+    backdropBlur: incoming.backdropBlur || base.backdropBlur,
+    borderStyle: incoming.borderStyle || base.borderStyle,
+    activeIndicatorStyle: incoming.activeIndicatorStyle || base.activeIndicatorStyle,
+    accentColor: incoming.accentColor || base.accentColor,
+    showLabels: incoming.showLabels ?? base.showLabels,
+    showMiniCartBar: incoming.showMiniCartBar ?? base.showMiniCartBar,
+    showAllocationsLivePill: incoming.showAllocationsLivePill ?? base.showAllocationsLivePill,
+    enableHapticGlow: incoming.enableHapticGlow ?? base.enableHapticGlow,
+    items: normalizedItems.length > 0 ? normalizedItems : base.items
+  };
+};
 import {
   testFirestoreConnection,
   subscribeToCloudProducts,
@@ -242,6 +281,7 @@ interface StoreContextType {
   adminSettings: AdminSettings;
   headerConfig: HeaderCustomizationConfig;
   footerConfig: FooterCustomizationConfig;
+  bottomNavbarConfig: BottomNavbarCustomizationConfig;
 
   // Customer Authentication & Session State
   isCustomerLoggedIn: boolean;
@@ -301,7 +341,9 @@ interface StoreContextType {
   updateAdminSettings: (settings: AdminSettings) => void;
   updateHeaderConfig: (config: HeaderCustomizationConfig) => void;
   updateFooterConfig: (config: FooterCustomizationConfig) => void;
+  updateBottomNavbarConfig: (config: BottomNavbarCustomizationConfig) => void;
   resetHeaderFooterConfig: () => void;
+  resetBottomNavbarConfig: () => void;
   updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => void;
   updateOrderTracking: (orderId: string, trackingNumber: string) => void;
   deleteOrder: (orderId: string) => void;
@@ -442,6 +484,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
+  const [bottomNavbarConfig, setBottomNavbarConfig] = useState<BottomNavbarCustomizationConfig>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_bottom_navbar`);
+      return saved ? normalizeBottomNavbarConfig(JSON.parse(saved)) : initialBottomNavbarConfig;
+    } catch {
+      return initialBottomNavbarConfig;
+    }
+  });
+
   const [ageVerified, setAgeVerifiedState] = useState<boolean>(() => {
     try {
       return localStorage.getItem(`${LOCAL_STORAGE_KEY}_age_verified`) === 'true';
@@ -567,6 +618,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [footerConfig]);
 
   useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_bottom_navbar`, JSON.stringify(bottomNavbarConfig)); } catch (_) {}
+  }, [bottomNavbarConfig]);
+
+  useEffect(() => {
     try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_cart`, JSON.stringify(cart)); } catch (_) {}
   }, [cart]);
 
@@ -662,6 +717,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (contents.settings) setAdminSettings(contents.settings);
           if (contents.header) setHeaderConfig(normalizeHeaderConfig(contents.header));
           if (contents.footer) setFooterConfig(normalizeFooterConfig(contents.footer));
+          if (contents.bottomNavbar) setBottomNavbarConfig(normalizeBottomNavbarConfig(contents.bottomNavbar));
           setCloudSyncStatus('connected');
           setLastSyncedAt(new Date());
         });
@@ -1116,6 +1172,17 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setFooterConfig(initialFooterConfig);
     saveCloudSiteContent('header', initialHeaderConfig).catch(e => console.warn('Cloud reset header notice:', e));
     saveCloudSiteContent('footer', initialFooterConfig).catch(e => console.warn('Cloud reset footer notice:', e));
+  };
+
+  const updateBottomNavbarConfig = (config: BottomNavbarCustomizationConfig) => {
+    const normalized = normalizeBottomNavbarConfig(config);
+    setBottomNavbarConfig(normalized);
+    saveCloudSiteContent('bottom_navbar', normalized).catch(e => console.warn('Cloud sync bottom navbar config notice:', e));
+  };
+
+  const resetBottomNavbarConfig = () => {
+    setBottomNavbarConfig(initialBottomNavbarConfig);
+    saveCloudSiteContent('bottom_navbar', initialBottomNavbarConfig).catch(e => console.warn('Cloud reset bottom navbar notice:', e));
   };
 
   // =========================================================================
@@ -1734,6 +1801,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setAdminSettings(initialAdminSettings);
     setHeaderConfig(initialHeaderConfig);
     setFooterConfig(initialFooterConfig);
+    setBottomNavbarConfig(initialBottomNavbarConfig);
     setReviews(initialReviews);
     setBallotAllocations(initialBallotAllocations);
     setBallotEntries(initialBallotEntries);
@@ -1799,6 +1867,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         adminSettings,
         headerConfig,
         footerConfig,
+        bottomNavbarConfig,
         reviews,
         getProductReviews,
         addProductReview,
@@ -1828,7 +1897,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         updateAdminSettings,
         updateHeaderConfig,
         updateFooterConfig,
+        updateBottomNavbarConfig,
         resetHeaderFooterConfig,
+        resetBottomNavbarConfig,
         updateOrderStatus,
         updateOrderTracking: (orderId: string, trackingNumber: string) => {
           updateOrderStatus(orderId, 'Dispatched', trackingNumber);

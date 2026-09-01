@@ -9,6 +9,7 @@ import {
   AdminSettings,
   HeaderCustomizationConfig,
   FooterCustomizationConfig,
+  BottomNavbarCustomizationConfig,
   ProductReview,
   BallotAllocation,
   BallotEntry
@@ -1637,5 +1638,66 @@ export const initialBallotEntries: BallotEntry[] = [
     registeredAt: '2026-08-17T11:05:00.000Z'
   }
 ];
+
+export const initialBottomNavbarConfig: BottomNavbarCustomizationConfig = {
+  enabled: true,
+  visibilityMode: 'mobile_only',
+  designStyle: 'floating_island',
+  floatingMargin: 'medium',
+  backdropBlur: 'xl',
+  borderStyle: 'gold_glow',
+  activeIndicatorStyle: 'top_glow_bar',
+  accentColor: 'amber',
+  showLabels: true,
+  showMiniCartBar: true,
+  showAllocationsLivePill: true,
+  enableHapticGlow: true,
+  items: [
+    {
+      id: 'bn-home',
+      label: 'Home',
+      tab: 'home',
+      iconName: 'Flame',
+      visible: true,
+      badgeType: 'none'
+    },
+    {
+      id: 'bn-products',
+      label: 'Vault',
+      tab: 'products',
+      iconName: 'Wine',
+      visible: true,
+      badgeType: 'none'
+    },
+    {
+      id: 'bn-allocations',
+      label: 'Allocations',
+      tab: 'allocations',
+      iconName: 'Crown',
+      visible: true,
+      badgeType: 'live',
+      badgeText: 'Live',
+      badgeColor: 'amber',
+      isCenterAction: true
+    },
+    {
+      id: 'bn-cart',
+      label: 'Cask Cart',
+      tab: 'cart',
+      iconName: 'ShoppingBag',
+      visible: true,
+      badgeType: 'cart_count',
+      badgeColor: 'amber'
+    },
+    {
+      id: 'bn-account',
+      label: 'Account',
+      tab: 'account',
+      iconName: 'User',
+      visible: true,
+      badgeType: 'none'
+    }
+  ]
+};
 
 
