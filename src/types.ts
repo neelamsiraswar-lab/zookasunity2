@@ -75,6 +75,33 @@ export interface DistillerInventoryItem {
   lastInspectedDate: string;
 }
 
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId?: string;
+  userName: string;
+  userEmail?: string;
+  userAvatar?: string;
+  rating: number; // 1 to 5
+  title: string;
+  comment: string;
+  verifiedBuyer?: boolean;
+  recommended?: boolean;
+  tastingTags?: string[];
+  helpfulCount?: number;
+  helpfulVoters?: string[];
+  date: string; // ISO date string (e.g. 2026-08-20)
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ProductReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingCounts: { [star: number]: number };
+  recommendationPercentage: number;
+}
+
 export interface CartItem {
   product: SpiritProduct;
   quantity: number;
@@ -300,24 +327,133 @@ export interface AdminSettings {
   sessionTimeoutMinutes?: number; // Auto-lock session after inactivity (default: 30)
 }
 
-export type AppTab = 'home' | 'products' | 'about' | 'blog' | 'account' | 'checkout' | 'admin';
+export type AppTab = 'home' | 'products' | 'allocations' | 'about' | 'blog' | 'account' | 'checkout' | 'admin';
+
+export type BallotStatus = 'upcoming' | 'open' | 'drawing_completed' | 'closed' | 'open_for_entries' | 'drawing_in_progress' | 'draw_completed' | 'bottled_and_shipped';
+
+export type BallotEntryStatus = 'registered' | 'selected_winner' | 'waitlisted' | 'claimed_paid' | 'expired' | 'unclaimed_expired';
+
+export interface BallotAllocation {
+  id: string;
+  title: string;
+  editionName: string;
+  spiritCategory: SpiritCategory;
+  productName: string;
+  linkedProductId?: string;
+  bottlePrice: number;
+  totalBottlesAvailable: number;
+  bottlesRemaining: number;
+  maxBottlesPerEntrant: number;
+  mashBill: string;
+  caskType: string;
+  abvPercent: number;
+  ageStatement: string;
+  bottleSize: string;
+  distillationYear: number;
+  registrationStartDate: string;
+  registrationEndDate: string;
+  drawDate: string;
+  status: BallotStatus;
+  imageUrl: string;
+  description: string;
+  tastingNotes: string[];
+  totalEntrants?: number;
+  totalBottlesRequested?: number;
+  subtitle?: string;
+  editionNumber?: string;
+  bottleYieldTotal?: number;
+  bottlesAvailable?: number;
+  allocatedCount?: number;
+  pricePerBottle?: number;
+  depositRequired?: number;
+  maxBottlesPerCollector?: number;
+  fulfillmentDate?: string;
+  heroImage?: string;
+  galleryImages?: string[];
+  caskProvenance?: {
+    barrelNumber: string;
+    woodType: string;
+    originDistillery: string;
+    distillationYear: number;
+    bottlingYear: number;
+    proof: number;
+    abv: string;
+    cellarLocation: string;
+    mashBill?: string;
+  };
+  tastingProfile?: {
+    nose: string;
+    palate: string;
+    finish: string;
+    connoisseurScore: number;
+    sommelierNotes: string;
+  };
+  eligibilityTier?: string;
+  requiresAdultIdVerification?: boolean;
+  entrantsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BallotEntry {
+  id: string;
+  allocationId: string;
+  allocationTitle: string;
+  productName: string;
+  bottlePrice: number;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  loyaltyTier: LoyaltyTier;
+  bottlesRequested: number;
+  preferredBottleNumbers?: number[];
+  collectorNotes?: string;
+  ticketNumber: string;
+  entrantNumber: number;
+  status: BallotEntryStatus;
+  registeredAt: string;
+  selectedAt?: string;
+  claimDeadline?: string;
+  assignedBottleNumbers?: string[];
+  shippingAddress?: Address;
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  userPhone?: string;
+  userLoyaltyTier?: LoyaltyTier;
+  allocatedBottleNumbers?: number[];
+  drawResultTimestamp?: string;
+  orderId?: string;
+}
 
 export interface HeaderNavItem {
   id: string;
   label: string;
   tab: AppTab;
-  visible: boolean;
+  visible?: boolean;
   badge?: string;
+  badgeColor?: 'amber' | 'emerald' | 'red';
+  iconName?: string;
   icon?: string;
 }
 
 export interface HeaderCustomizationConfig {
-  logoType: 'icon_text' | 'image' | 'text_only';
+  brandName?: string;
+  brandTagline?: string;
+  brandTitle?: string;
+  brandSubtitle?: string;
+  logoType?: 'icon_text' | 'image' | 'text_only';
   logoImageUrl?: string;
-  logoIcon: string;
-  brandTitle: string;
-  brandSubtitle: string;
-  announcement: {
+  logoIcon?: string;
+  stickyHeader?: boolean;
+  showAnnouncementBar?: boolean;
+  announcementText?: string;
+  announcementBgColor?: string;
+  announcementTextColor?: string;
+  announcementLinkText?: string;
+  announcementTab?: AppTab;
+  announcement?: {
     enabled: boolean;
     text: string;
     badgeText?: string;
@@ -325,44 +461,64 @@ export interface HeaderCustomizationConfig {
     showSparkleIcon?: boolean;
     style: 'amber_gradient' | 'emerald_luxury' | 'ruby_cask' | 'obsidian_gold';
   };
-  navLinks: HeaderNavItem[];
-  showSearch: boolean;
-  searchPlaceholder: string;
-  showCloudSyncIndicator: boolean;
-  showCustomerAccountMenu: boolean;
-  showCartButton: boolean;
+  navLinks?: HeaderNavItem[];
+  navItems?: HeaderNavItem[];
+  showSearchBar?: boolean;
+  showSearch?: boolean;
+  searchPlaceholder?: string;
+  showCloudStatus?: boolean;
+  showCloudSyncIndicator?: boolean;
+  showCustomerAccount?: boolean;
+  showCustomerAccountMenu?: boolean;
+  showAdminButton?: boolean;
+  adminButtonText?: string;
+  showCartButton?: boolean;
   cartButtonLabel?: string;
-  stickyHeader: boolean;
-  headerTheme: 'dark_glass' | 'midnight_black' | 'warm_amber_glow' | 'minimal_slate';
+  headerTheme?: 'dark_glass' | 'midnight_black' | 'warm_amber_glow' | 'minimal_slate';
 }
 
 export interface FooterColumnLink {
   id: string;
   label: string;
-  actionType: 'tab' | 'url';
+  actionType?: 'tab' | 'url';
   targetTab?: AppTab;
+  tab?: AppTab;
   externalUrl?: string;
+  url?: string;
+  isExternal?: boolean;
   badge?: string;
   highlight?: boolean;
 }
 
+export type FooterLink = FooterColumnLink;
+
 export interface FooterColumn {
   id: string;
   title: string;
-  visible: boolean;
+  visible?: boolean;
   links: FooterColumnLink[];
 }
 
 export interface FooterSocialLink {
-  id: string;
-  platform: 'instagram' | 'twitter' | 'youtube' | 'facebook' | 'linkedin';
-  label: string;
+  id?: string;
+  platform: string;
+  label?: string;
   url: string;
-  enabled: boolean;
+  iconName?: string;
+  enabled?: boolean;
+  visible?: boolean;
 }
 
 export interface FooterCustomizationConfig {
-  newsletterSection: {
+  brandName?: string;
+  brandDescription?: string;
+  showNewsletter?: boolean;
+  newsletterHeading?: string;
+  newsletterSubheading?: string;
+  newsletterButtonText?: string;
+  newsletterPromoCode?: string;
+  newsletterDiscountText?: string;
+  newsletterSection?: {
     enabled: boolean;
     badgeText: string;
     heading: string;
@@ -373,7 +529,7 @@ export interface FooterCustomizationConfig {
     discountPercentText: string;
     successMessage: string;
   };
-  brandColumn: {
+  brandColumn?: {
     logoType: 'icon_text' | 'image' | 'text_only';
     logoImageUrl?: string;
     logoIcon: string;
@@ -389,7 +545,12 @@ export interface FooterCustomizationConfig {
     };
   };
   columns: FooterColumn[];
-  distilleryContact: {
+  showContactInfo?: boolean;
+  contactAddress?: string;
+  contactHours?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  distilleryContact?: {
     showContactColumn: boolean;
     title: string;
     address: string;
@@ -399,13 +560,16 @@ export interface FooterCustomizationConfig {
     showConciergeBadge: boolean;
     conciergeText: string;
   };
-  bottomBar: {
+  showComplianceBadges?: boolean;
+  complianceBadges?: string[];
+  copyrightText?: string;
+  bottomBar?: {
     copyrightText: string;
     disclaimerText: string;
     taglines: string[];
     showAdminPortalLink: boolean;
     adminPortalLabel: string;
   };
-  socialLinks: FooterSocialLink[];
-  footerTheme: 'deep_stone' | 'obsidian_gold' | 'cask_wood_dark';
+  socialLinks?: FooterSocialLink[];
+  footerTheme?: 'deep_stone' | 'obsidian_gold' | 'cask_wood_dark';
 }

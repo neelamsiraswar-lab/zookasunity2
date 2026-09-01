@@ -20,6 +20,7 @@ import {
   Quote
 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { formatPrice } from '../../utils/currency';
 
 export const HomeView: React.FC = () => {
   const { 
@@ -28,7 +29,8 @@ export const HomeView: React.FC = () => {
     setActiveTab, 
     setSelectedCategory, 
     setActiveProductModal, 
-    addToCart 
+    addToCart,
+    adminSettings
   } = useStore();
 
   // Limited release countdown timer simulation
@@ -64,13 +66,25 @@ export const HomeView: React.FC = () => {
 
       {/* Limited Cask Spotlight with Live Allocation Countdown */}
       {spotlightSpirit && (
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.section 
+          initial={{ opacity: 0, y: 36 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        >
           <div className="relative rounded-3xl bg-gradient-to-br from-amber-950/40 via-stone-900 to-stone-950 border border-amber-600/30 p-8 sm:p-12 overflow-hidden shadow-2xl">
             <div className="absolute -right-20 -top-20 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
               {/* Spirit Image Showcase */}
-              <div className="lg:col-span-5 flex justify-center">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.94 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+                className="lg:col-span-5 flex justify-center"
+              >
                 <div className="relative group max-w-sm w-full">
                   <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-amber-500/30 shadow-2xl shadow-amber-950/80 bg-stone-950">
                     <img
@@ -83,7 +97,7 @@ export const HomeView: React.FC = () => {
                     Master Distiller's Private Cask
                   </div>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Spirit Description & Countdown */}
               <div className="lg:col-span-7 space-y-6">
@@ -147,11 +161,11 @@ export const HomeView: React.FC = () => {
                   <div>
                     <div className="flex items-baseline gap-2">
                       <span className="font-serif text-3xl font-bold text-amber-400">
-                        ${spotlightSpirit.salePrice ?? spotlightSpirit.price}
+                        {formatPrice(spotlightSpirit.salePrice ?? spotlightSpirit.price, adminSettings.currencySymbol)}
                       </span>
                       {spotlightSpirit.salePrice && (
                         <span className="text-sm text-stone-500 line-through">
-                          ${spotlightSpirit.price}
+                          {formatPrice(spotlightSpirit.price, adminSettings.currencySymbol)}
                         </span>
                       )}
                       <span className="text-xs text-stone-400">/ {spotlightSpirit.bottleSize}</span>
@@ -177,11 +191,17 @@ export const HomeView: React.FC = () => {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
       )}
 
       {/* Featured Spirits Catalog Carousel / Grid */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+      <motion.section 
+        initial={{ opacity: 0, y: 36 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6"
+      >
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-800 pb-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-1">
@@ -205,11 +225,15 @@ export const HomeView: React.FC = () => {
 
         {/* Product Cards: Horizontal Swipe Track on Mobile & Tab, 4-col Grid on Desktop */}
         <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-4 pt-1 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {featuredSpirits.map((spirit) => {
+          {featuredSpirits.map((spirit, idx) => {
             const unitPrice = spirit.salePrice ?? spirit.price;
             return (
-              <div
+              <motion.div
                 key={spirit.id}
+                initial={{ opacity: 0, y: 28 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-40px' }}
+                transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
                 className="w-[260px] sm:w-[300px] shrink-0 snap-start lg:w-auto group flex flex-col rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-600/50 transition-all duration-300 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-amber-950/30"
               >
                 {/* Image & Badges */}
@@ -267,11 +291,11 @@ export const HomeView: React.FC = () => {
                     <div>
                       <div className="flex items-baseline gap-1.5">
                         <span className="font-serif text-lg font-bold text-amber-400">
-                          ${unitPrice}
+                          {formatPrice(unitPrice, adminSettings.currencySymbol)}
                         </span>
                         {spirit.salePrice && (
                           <span className="text-xs text-stone-500 line-through">
-                            ${spirit.price}
+                            {formatPrice(spirit.price, adminSettings.currencySymbol)}
                           </span>
                         )}
                       </div>
@@ -288,24 +312,48 @@ export const HomeView: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>
-      </section>
+      </motion.section>
 
       {/* Chronology & Distillation Heritage */}
-      <ChronologyHeritageSection />
+      <motion.div
+        initial={{ opacity: 0, y: 36 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <ChronologyHeritageSection />
+      </motion.div>
 
       {/* Guiding Principles: Mission, Vision & Core Values */}
-      <GuidingPrinciplesSection />
+      <motion.div
+        initial={{ opacity: 0, y: 36 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <GuidingPrinciplesSection />
+      </motion.div>
 
       {/* Brand Value Pillars (Responsive Horizontal on Mobile & Tablet, 4-col Grid on Desktop) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.section 
+        initial={{ opacity: 0, y: 36 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-6 pb-4 pt-1 lg:grid lg:grid-cols-4 lg:gap-6 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {homeContent.features.map((feat, idx) => (
-            <div
+            <motion.div
               key={idx}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{ duration: 0.5, delay: idx * 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="w-[260px] sm:w-[280px] shrink-0 snap-start lg:w-auto p-6 rounded-2xl bg-stone-900/60 border border-stone-800 hover:border-amber-700/40 transition space-y-3 shadow-lg"
             >
               <div className="w-12 h-12 rounded-xl bg-amber-950/60 border border-amber-600/30 flex items-center justify-center text-amber-400">
@@ -317,13 +365,19 @@ export const HomeView: React.FC = () => {
               <p className="text-xs text-stone-400 leading-relaxed">
                 {feat.description}
               </p>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
       {/* Master Distiller Philosophy Quote */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <motion.section 
+        initial={{ opacity: 0, scale: 0.96 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true, margin: '-60px' }}
+        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
         <div className="relative rounded-3xl bg-stone-900 border border-stone-800 p-8 sm:p-14 text-center space-y-6 overflow-hidden">
           <Quote className="w-12 h-12 text-amber-500/20 mx-auto" />
           <p className="font-serif text-xl sm:text-2xl text-stone-200 leading-relaxed italic max-w-3xl mx-auto">
@@ -335,7 +389,7 @@ export const HomeView: React.FC = () => {
             </span>
           </div>
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 };

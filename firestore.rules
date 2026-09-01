@@ -1,42 +1,138 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Products catalog
+
+    // Common ID Validator
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    // Helper functions for entity validation
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string &&
+             data.stockQuantity is number && data.stockQuantity >= 0;
+    }
+
+    function isValidInventoryLot(data) {
+      return data.spiritName is string && data.spiritName.size() > 0 &&
+             data.caskNumber is string &&
+             data.volumeLiters is number && data.volumeLiters >= 0;
+    }
+
+    function isValidOrder(data) {
+      return data.customerEmail is string && data.customerEmail.size() > 0 &&
+             data.total is number && data.total >= 0 &&
+             data.items is list && data.items.size() > 0 && data.items.size() <= 100;
+    }
+
+    function isValidBlogPost(data) {
+      return data.title is string && data.title.size() > 0 &&
+             data.content is string && data.content.size() > 0;
+    }
+
+    function isValidSiteContent(data) {
+      return data.id is string || data.keys().size() > 0;
+    }
+
+    function isValidCustomer(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.email is string && data.email.size() > 0;
+    }
+
+    function isValidReview(data) {
+      return data.productId is string && data.productId.size() > 0 && data.productId.size() <= 64 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() <= 120 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.comment is string && data.comment.size() > 0 && data.comment.size() <= 5000 &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             (!('helpfulCount' in data) || data.helpfulCount is number) &&
+             (!('helpfulVoters' in data) || (data.helpfulVoters is list && data.helpfulVoters.size() <= 2000)) &&
+             (!('tastingNotesTags' in data) || (data.tastingNotesTags is list && data.tastingNotesTags.size() <= 50));
+    }
+
+    function isValidBallotAllocation(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 250 &&
+             data.bottleYieldTotal is number && data.bottleYieldTotal > 0 &&
+             data.pricePerBottle is number && data.pricePerBottle >= 0 &&
+             data.status is string;
+    }
+
+    function isValidBallotEntry(data) {
+      return data.allocationId is string && data.allocationId.size() > 0 &&
+             data.userName is string && data.userName.size() > 0 && data.userName.size() <= 150 &&
+             data.userEmail is string && data.userEmail.size() > 0 && data.userEmail.size() <= 200 &&
+             data.bottlesRequested is number && data.bottlesRequested >= 1 && data.bottlesRequested <= 10 &&
+             data.status is string;
+    }
+
+    // 1. Products Catalog
     match /products/{productId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isValidId(productId) && isValidProduct(request.resource.data);
+      allow delete: if isValidId(productId);
     }
 
-    // Distiller Inventory Lots
+    // 2. Distiller Inventory Lots
     match /inventory/{lotId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isValidId(lotId) && isValidInventoryLot(request.resource.data);
+      allow delete: if isValidId(lotId);
     }
 
-    // Orders
+    // 3. Orders
     match /orders/{orderId} {
       allow read: if true;
-      allow create: if true;
-      allow update: if true;
-      allow delete: if true;
+      allow create: if isValidId(orderId) && isValidOrder(request.resource.data);
+      allow update: if isValidId(orderId);
+      allow delete: if isValidId(orderId);
     }
 
-    // Blog Articles & Notes
+    // 4. Blog Articles & Notes
     match /blog_posts/{postId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isValidId(postId) && isValidBlogPost(request.resource.data);
+      allow delete: if isValidId(postId);
     }
 
-    // Site CMS Content (Home, About, Settings)
+    // 5. Site CMS Content
     match /site_content/{contentId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isValidId(contentId) && isValidSiteContent(request.resource.data);
+      allow delete: if isValidId(contentId);
     }
 
-    // Customer Accounts
+    // 6. Customer Accounts
     match /customers/{customerId} {
       allow read: if true;
-      allow write: if true;
+      allow create, update: if isValidId(customerId) && isValidCustomer(request.resource.data);
+      allow delete: if isValidId(customerId);
+    }
+
+    // 7. Product Reviews & Connoisseur Feedback
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isValidId(reviewId) && isValidReview(request.resource.data);
+      allow update: if isValidId(reviewId) && (
+        isValidReview(request.resource.data) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['helpfulCount', 'helpfulVoters', 'updatedAt'])
+      );
+      allow delete: if isValidId(reviewId);
+    }
+
+    // 8. Limited Edition Ballot Allocations
+    match /ballot_allocations/{allocationId} {
+      allow read: if true;
+      allow create, update: if isValidId(allocationId) && isValidBallotAllocation(request.resource.data);
+      allow delete: if isValidId(allocationId);
+    }
+
+    // 9. Collector Ballot Entries
+    match /ballot_entries/{entryId} {
+      allow read: if true;
+      allow create, update: if isValidId(entryId) && isValidBallotEntry(request.resource.data);
+      allow delete: if isValidId(entryId);
     }
   }
 }

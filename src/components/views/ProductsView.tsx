@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Filter
 } from 'lucide-react';
+import { formatPrice } from '../../utils/currency';
 
 export const ProductsView: React.FC = () => {
   const { 
@@ -23,11 +24,12 @@ export const ProductsView: React.FC = () => {
     searchQuery, 
     setSearchQuery,
     setActiveProductModal,
-    addToCart
+    addToCart,
+    adminSettings
   } = useStore();
 
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'rating' | 'age'>('featured');
-  const [maxPrice, setMaxPrice] = useState<number>(500);
+  const [maxPrice, setMaxPrice] = useState<number>(50000);
   const [abvFilter, setAbvFilter] = useState<'all' | 'under-45' | '45-50' | 'above-50'>('all');
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [showFilterDrawer, setShowFilterDrawer] = useState<boolean>(false);
@@ -97,7 +99,7 @@ export const ProductsView: React.FC = () => {
   const resetFilters = () => {
     setSelectedCategory('All');
     setSearchQuery('');
-    setMaxPrice(500);
+    setMaxPrice(50000);
     setAbvFilter('all');
     setInStockOnly(false);
     setSortBy('featured');
@@ -170,14 +172,14 @@ export const ProductsView: React.FC = () => {
             <span className="text-stone-400 font-medium">Max Price:</span>
             <input
               type="range"
-              min={50}
-              max={500}
-              step={25}
+              min={2000}
+              max={50000}
+              step={1000}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-24 accent-amber-500"
             />
-            <span className="text-amber-400 font-bold">${maxPrice}</span>
+            <span className="text-amber-400 font-bold">{formatPrice(maxPrice, adminSettings.currencySymbol)}</span>
           </div>
 
           {/* ABV Level */}
@@ -232,12 +234,12 @@ export const ProductsView: React.FC = () => {
             <button onClick={() => setShowFilterDrawer(false)} className="text-stone-400">✕</button>
           </div>
           <div>
-            <span className="text-stone-400 block mb-1">Max Price: ${maxPrice}</span>
+            <span className="text-stone-400 block mb-1">Max Price: {formatPrice(maxPrice, adminSettings.currencySymbol)}</span>
             <input
               type="range"
-              min={50}
-              max={500}
-              step={25}
+              min={2000}
+              max={50000}
+              step={1000}
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
               className="w-full accent-amber-500"
@@ -277,7 +279,7 @@ export const ProductsView: React.FC = () => {
           Showing <strong className="text-stone-200">{filteredProducts.length}</strong> spirits in vault
           {selectedCategory !== 'All' && <span> • Category: <strong className="text-amber-400">{selectedCategory}</strong></span>}
         </span>
-        {(searchQuery || selectedCategory !== 'All' || maxPrice < 500 || abvFilter !== 'all' || inStockOnly) && (
+        {(searchQuery || selectedCategory !== 'All' || maxPrice < 50000 || abvFilter !== 'all' || inStockOnly) && (
           <button
             onClick={resetFilters}
             className="text-amber-400 hover:text-amber-300 underline cursor-pointer"
@@ -401,11 +403,11 @@ export const ProductsView: React.FC = () => {
                     <div>
                       <div className="flex items-baseline gap-1.5">
                         <span className="font-serif text-lg font-bold text-amber-400">
-                          ${unitPrice}
+                          {formatPrice(unitPrice, adminSettings.currencySymbol)}
                         </span>
                         {spirit.salePrice && (
                           <span className="text-xs text-stone-500 line-through">
-                            ${spirit.price}
+                            {formatPrice(spirit.price, adminSettings.currencySymbol)}
                           </span>
                         )}
                       </div>

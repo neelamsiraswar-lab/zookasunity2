@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
+import { formatPrice } from '../utils/currency';
 import { 
   X, 
   Sparkles, 
@@ -17,9 +18,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { ProductReviewsSection } from './ProductReviewsSection';
 
 export const ProductDetailModal: React.FC = () => {
-  const { activeProductModal, setActiveProductModal, addToCart } = useStore();
+  const { activeProductModal, setActiveProductModal, addToCart, adminSettings } = useStore();
   const [selectedImgIndex, setSelectedImgIndex] = useState<number>(0);
   const [quantity, setQuantity] = useState<number>(1);
   const [giftBox, setGiftBox] = useState<boolean>(false);
@@ -76,7 +78,7 @@ export const ProductDetailModal: React.FC = () => {
                   )}
                   {product.salePrice && (
                     <span className="absolute top-3 right-3 px-2.5 py-1 bg-rose-600 text-white text-[11px] font-bold rounded-full">
-                      SAVE ${(product.price - product.salePrice).toFixed(0)}
+                      SAVE {formatPrice(product.price - product.salePrice, adminSettings.currencySymbol)}
                     </span>
                   )}
                 </div>
@@ -131,7 +133,15 @@ export const ProductDetailModal: React.FC = () => {
                   </p>
 
                   <div className="flex items-center gap-3 mt-3">
-                    <div className="flex items-center text-amber-400 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`reviews-section-${product.id}`);
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="flex items-center text-amber-400 text-xs hover:underline cursor-pointer group"
+                      title="Jump to Connoisseur Tasting Reviews"
+                    >
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
@@ -141,8 +151,8 @@ export const ProductDetailModal: React.FC = () => {
                         />
                       ))}
                       <span className="ml-1.5 font-bold text-stone-200">{product.rating}</span>
-                      <span className="text-stone-500 ml-1">({product.reviewCount} reviews)</span>
-                    </div>
+                      <span className="text-stone-500 ml-1 group-hover:text-amber-400">({product.reviewCount} reviews)</span>
+                    </button>
                     <span className="text-stone-700">|</span>
                     <span className="text-xs text-stone-400">
                       Distilled by <strong className="text-stone-200">{product.distillerName}</strong> ({product.distillerOrigin})
@@ -258,7 +268,7 @@ export const ProductDetailModal: React.FC = () => {
                       />
                       <span className="text-xs font-semibold text-stone-200 flex items-center gap-1.5">
                         <Gift className="w-4 h-4 text-amber-400" />
-                        Add Handcrafted Timber Gift Box & Beeswax Seal (+ $15.00)
+                        Add Handcrafted Timber Gift Box & Beeswax Seal (+ {formatPrice(1200, adminSettings.currencySymbol)})
                       </span>
                     </div>
                   </label>
@@ -285,11 +295,11 @@ export const ProductDetailModal: React.FC = () => {
                   <div className="w-full sm:w-auto">
                     <div className="flex items-baseline gap-2">
                       <span className="text-2xl font-bold font-serif text-amber-400">
-                        ${unitPrice}
+                        {formatPrice(unitPrice, adminSettings.currencySymbol)}
                       </span>
                       {product.salePrice && (
                         <span className="text-sm text-stone-500 line-through">
-                          ${product.price}
+                          {formatPrice(product.price, adminSettings.currencySymbol)}
                         </span>
                       )}
                       <span className="text-xs text-stone-400">/ {product.bottleSize}</span>
@@ -346,6 +356,9 @@ export const ProductDetailModal: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Connoisseur Tasting Reviews Section */}
+            <ProductReviewsSection product={product} />
           </div>
         </motion.div>
       </div>

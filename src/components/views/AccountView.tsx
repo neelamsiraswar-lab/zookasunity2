@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { formatPrice } from '../../utils/currency';
 import { Address } from '../../types';
 import { 
   User, 
@@ -18,7 +19,11 @@ import {
   LogOut,
   LogIn,
   Flame,
-  ArrowRight
+  ArrowRight,
+  Ticket,
+  Crown,
+  Clock,
+  ExternalLink
 } from 'lucide-react';
 
 export const AccountView: React.FC = () => {
@@ -36,10 +41,16 @@ export const AccountView: React.FC = () => {
     deleteCustomerAddress,
     setDefaultAddress,
     addToCart,
-    setActiveTab
+    setActiveTab,
+    getUserBallotEntries,
+    claimBallotAllocation,
+    ballotAllocations,
+    adminSettings
   } = useStore();
 
-  const [activeAccountSubTab, setActiveAccountSubTab] = useState<'orders' | 'profile' | 'addresses'>('orders');
+  const userBallots = getUserBallotEntries();
+  const [activeAccountSubTab, setActiveAccountSubTab] = useState<'orders' | 'ballots' | 'profile' | 'addresses'>('orders');
+  const [claimingEntryId, setClaimingEntryId] = useState<string | null>(null);
   const [newAddrModal, setNewAddrModal] = useState<boolean>(false);
   const [newAddr, setNewAddr] = useState<Omit<Address, 'id'>>({
     fullName: customer.name,
@@ -193,7 +204,7 @@ export const AccountView: React.FC = () => {
           </div>
           <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 min-w-28">
             <span className="text-[10px] text-stone-400 uppercase tracking-wider block">Account Volume</span>
-            <strong className="text-xl font-serif text-stone-100">${customer.totalSpent.toFixed(0)}</strong>
+            <strong className="text-xl font-serif text-stone-100">{formatPrice(customer.totalSpent, adminSettings.currencySymbol)}</strong>
             <span className="text-[10px] text-stone-500 block">Lifetime Reserved</span>
           </div>
           <button
@@ -211,6 +222,7 @@ export const AccountView: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
         {[
           { id: 'orders', label: `Order History (${orders.length})`, icon: Package },
+          { id: 'ballots', label: `Allocations & Ballot Tickets (${userBallots.length})`, icon: Ticket },
           { id: 'addresses', label: 'Saved Address Book', icon: MapPin },
           { id: 'profile', label: 'Taste Preferences & Alerts', icon: User }
         ].map((tab) => {
@@ -232,6 +244,152 @@ export const AccountView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Tab: Ballot Tickets & Allocations */}
+      {activeAccountSubTab === 'ballots' && (
+        <div className="space-y-6" id="account-ballots-tab">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl bg-stone-900/60 border border-stone-800">
+            <div>
+              <h3 className="font-cinzel text-lg font-bold text-stone-100">
+                Your Registered Ballot Allocations
+              </h3>
+              <p className="text-xs text-stone-400">
+                Track lottery entries, claim winning allocations within the 72-hour window, and view bonded bottle certifications.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setActiveTab('allocations');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-wider rounded-lg transition flex items-center gap-1.5 shadow"
+            >
+              <Crown className="w-3.5 h-3.5" />
+              <span>Browse Open Draws</span>
+            </button>
+          </div>
+
+          {userBallots.length === 0 ? (
+            <div className="p-12 text-center rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
+              <Ticket className="w-12 h-12 text-stone-600 mx-auto" />
+              <h3 className="font-cinzel text-lg font-bold text-stone-200">No Ballot Registrations Found</h3>
+              <p className="text-xs text-stone-400 max-w-sm mx-auto">
+                You haven't entered any limited edition spirit draws yet. Enter our open ballots to secure allocations of ultra-rare single cask expressions.
+              </p>
+              <button
+                onClick={() => { setActiveTab('allocations'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                className="px-5 py-2.5 bg-amber-500 text-stone-950 font-bold text-xs rounded-xl hover:bg-amber-400 transition"
+              >
+                View Open Rare Spirit Draws
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {userBallots.map((entry) => {
+                const isWinner = entry.status === 'selected_winner';
+                const isClaimed = entry.status === 'claimed_paid';
+                const alloc = ballotAllocations.find(a => a.id === entry.allocationId);
+
+                return (
+                  <div
+                    key={entry.id}
+                    className={`p-6 rounded-2xl border flex flex-col justify-between space-y-4 relative overflow-hidden shadow-xl ${
+                      isWinner
+                        ? 'bg-emerald-950/30 border-emerald-500/60 shadow-emerald-950/30'
+                        : isClaimed
+                        ? 'bg-stone-900/90 border-stone-700'
+                        : 'bg-stone-900/60 border-stone-800'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Ticket className="w-4 h-4 text-amber-400" />
+                          <span className="font-mono text-xs font-bold text-amber-400 tracking-wider">
+                            {entry.ticketNumber}
+                          </span>
+                        </div>
+                        <h4 className="font-cinzel text-base font-bold text-stone-100 mt-1">
+                          {entry.productName}
+                        </h4>
+                        <span className="text-xs text-stone-400 block">{entry.allocationTitle}</span>
+                      </div>
+
+                      <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                        isWinner
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 animate-pulse'
+                          : isClaimed
+                          ? 'bg-stone-800 text-stone-300 border border-stone-700'
+                          : 'bg-amber-500/10 text-amber-300 border border-amber-500/30'
+                      }`}>
+                        {isWinner ? 'Winner Selected!' : isClaimed ? 'Allocated & Paid' : 'Entry Active in Pool'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-stone-950/60 text-xs border border-stone-800/80">
+                      <div>
+                        <span className="text-stone-500 block text-[10px] uppercase font-bold">Bottles</span>
+                        <span className="text-stone-200 font-semibold">{entry.bottlesRequested} bottle(s)</span>
+                      </div>
+                      <div>
+                        <span className="text-stone-500 block text-[10px] uppercase font-bold">Total Allocation</span>
+                        <span className="text-amber-400 font-semibold">{formatPrice(entry.bottlePrice * entry.bottlesRequested, adminSettings.currencySymbol)}</span>
+                      </div>
+                      <div>
+                        <span className="text-stone-500 block text-[10px] uppercase font-bold">Registered On</span>
+                        <span className="text-stone-300">{new Date(entry.registeredAt).toLocaleDateString()}</span>
+                      </div>
+                      <div>
+                        <span className="text-stone-500 block text-[10px] uppercase font-bold">Entrant Number</span>
+                        <span className="text-stone-300">#{entry.entrantNumber}</span>
+                      </div>
+                    </div>
+
+                    {entry.assignedBottleNumbers && entry.assignedBottleNumbers.length > 0 && (
+                      <div className="p-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-xs flex items-center justify-between">
+                        <span className="text-stone-300">Official Assigned Bottle:</span>
+                        <strong className="text-emerald-400 font-mono font-bold text-sm">
+                          {entry.assignedBottleNumbers.join(', ')}
+                        </strong>
+                      </div>
+                    )}
+
+                    {isWinner && (
+                      <div className="space-y-2 pt-2">
+                        <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-300 flex items-center gap-2">
+                          <Crown className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>Congratulations! Your ticket was selected in the fair draw. Complete checkout to secure dispatch.</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            setClaimingEntryId(entry.id);
+                            try {
+                              await claimBallotAllocation(entry.id);
+                            } finally {
+                              setClaimingEntryId(null);
+                            }
+                          }}
+                          disabled={claimingEntryId === entry.id}
+                          className="w-full py-2.5 px-4 bg-emerald-500 hover:bg-emerald-400 text-stone-950 font-bold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 cursor-pointer"
+                        >
+                          {claimingEntryId === entry.id ? (
+                            <span>Claiming & Generating Order...</span>
+                          ) : (
+                            <>
+                              <Crown className="w-4 h-4" />
+                              <span>Claim & Purchase Allocation ({formatPrice(entry.bottlePrice * entry.bottlesRequested, adminSettings.currencySymbol)})</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tab: Orders Management */}
       {activeAccountSubTab === 'orders' && (
@@ -284,7 +442,7 @@ export const AccountView: React.FC = () => {
                         <span>Download Invoice</span>
                       </button>
                       <span className="font-serif text-lg font-bold text-amber-400">
-                        ${order.total.toFixed(2)}
+                        {formatPrice(order.total, adminSettings.currencySymbol)}
                       </span>
                     </div>
                   </div>
@@ -356,7 +514,7 @@ export const AccountView: React.FC = () => {
 
                         <div className="flex items-center gap-3">
                           <span className="font-serif font-bold text-stone-200">
-                            ${((item.product.salePrice ?? item.product.price) * item.quantity).toFixed(2)}
+                            {formatPrice((item.product.salePrice ?? item.product.price) * item.quantity, adminSettings.currencySymbol)}
                           </span>
                           <button
                             onClick={() => addToCart(item.product, 1)}
@@ -401,14 +559,15 @@ export const AccountView: React.FC = () => {
                 'High Proof Cask Strength',
                 'Triple-Filtered Vodka'
               ].map((pref) => {
-                const isSelected = customer.spiritPreferences.includes(pref);
+                const isSelected = (customer.spiritPreferences || []).includes(pref);
                 return (
                   <button
                     key={pref}
                     onClick={() => {
+                      const currentPrefs = customer.spiritPreferences || [];
                       const updated = isSelected
-                        ? customer.spiritPreferences.filter(p => p !== pref)
-                        : [...customer.spiritPreferences, pref];
+                        ? currentPrefs.filter(p => p !== pref)
+                        : [...currentPrefs, pref];
                       updateCustomerProfile({ spiritPreferences: updated });
                     }}
                     className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${

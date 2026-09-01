@@ -14,7 +14,16 @@ import {
   AdminSettings,
   Address,
   HeaderCustomizationConfig,
-  FooterCustomizationConfig
+  FooterCustomizationConfig,
+  HeaderNavItem,
+  FooterColumn,
+  FooterSocialLink,
+  ProductReview,
+  BallotAllocation,
+  BallotEntry,
+  BallotStatus,
+  BallotEntryStatus,
+  AppTab
 } from '../types';
 import {
   initialProducts,
@@ -27,8 +36,119 @@ import {
   initialHomeContent,
   initialAdminSettings,
   initialHeaderConfig,
-  initialFooterConfig
+  initialFooterConfig,
+  initialReviews,
+  initialBallotAllocations,
+  initialBallotEntries
 } from '../data/initialData';
+
+export const normalizeHeaderConfig = (incoming?: Partial<HeaderCustomizationConfig> | null): HeaderCustomizationConfig => {
+  const base = initialHeaderConfig;
+  if (!incoming) return base;
+  
+  const rawItems = incoming.navItems || incoming.navLinks || base.navItems || [];
+  const normalizedNavItems: HeaderNavItem[] = rawItems.map((item, idx) => ({
+    id: item.id || `nav-${idx}`,
+    label: item.label || 'Link',
+    tab: item.tab || 'home',
+    visible: item.visible !== false,
+    badge: item.badge || undefined,
+    badgeColor: item.badgeColor || 'amber',
+    iconName: item.iconName || item.icon || 'Flame',
+    icon: item.icon || item.iconName || 'Flame'
+  }));
+
+  return {
+    ...base,
+    ...incoming,
+    brandName: incoming.brandName || incoming.brandTitle || base.brandName,
+    brandTagline: incoming.brandTagline || incoming.brandSubtitle || base.brandTagline,
+    logoType: incoming.logoType || base.logoType,
+    logoIcon: incoming.logoIcon || base.logoIcon,
+    logoImageUrl: incoming.logoImageUrl || base.logoImageUrl,
+    stickyHeader: incoming.stickyHeader ?? base.stickyHeader,
+    showAnnouncementBar: incoming.showAnnouncementBar ?? incoming.announcement?.enabled ?? base.showAnnouncementBar,
+    announcementText: incoming.announcementText || incoming.announcement?.text || base.announcementText,
+    announcementBgColor: incoming.announcementBgColor || '#451a03',
+    announcementTextColor: incoming.announcementTextColor || '#fde68a',
+    announcementLinkText: incoming.announcementLinkText || base.announcementLinkText,
+    announcementTab: incoming.announcementTab || base.announcementTab,
+    navItems: normalizedNavItems.length > 0 ? normalizedNavItems : (base.navItems || []),
+    navLinks: normalizedNavItems.length > 0 ? normalizedNavItems : (base.navLinks || []),
+    showSearchBar: incoming.showSearchBar ?? incoming.showSearch ?? base.showSearchBar,
+    showSearch: incoming.showSearch ?? incoming.showSearchBar ?? base.showSearch,
+    searchPlaceholder: incoming.searchPlaceholder || base.searchPlaceholder,
+    showCloudStatus: incoming.showCloudStatus ?? incoming.showCloudSyncIndicator ?? base.showCloudStatus,
+    showCloudSyncIndicator: incoming.showCloudSyncIndicator ?? incoming.showCloudStatus ?? base.showCloudSyncIndicator,
+    showCustomerAccount: incoming.showCustomerAccount ?? incoming.showCustomerAccountMenu ?? base.showCustomerAccount,
+    showCustomerAccountMenu: incoming.showCustomerAccountMenu ?? incoming.showCustomerAccount ?? base.showCustomerAccountMenu,
+    showAdminButton: incoming.showAdminButton ?? true,
+    adminButtonText: incoming.adminButtonText || 'Admin CMS',
+    showCartButton: incoming.showCartButton ?? true,
+    cartButtonLabel: incoming.cartButtonLabel || 'Cask Cart',
+    headerTheme: incoming.headerTheme || base.headerTheme
+  };
+};
+
+export const normalizeFooterConfig = (incoming?: Partial<FooterCustomizationConfig> | null): FooterCustomizationConfig => {
+  const base = initialFooterConfig;
+  if (!incoming) return base;
+
+  const rawCols = incoming.columns || base.columns || [];
+  const normalizedCols: FooterColumn[] = rawCols.map((col, cIdx) => ({
+    id: col.id || `col-${cIdx}`,
+    title: col.title || 'Column',
+    visible: col.visible !== false,
+    links: (col.links || []).map((link, lIdx) => ({
+      id: link.id || `link-${cIdx}-${lIdx}`,
+      label: link.label || 'Link',
+      tab: link.tab || link.targetTab || 'products',
+      targetTab: link.targetTab || link.tab || 'products',
+      actionType: link.actionType || 'tab',
+      url: link.url || link.externalUrl || '',
+      externalUrl: link.externalUrl || link.url || '',
+      isExternal: link.isExternal ?? (link.actionType === 'url'),
+      badge: link.badge || undefined,
+      highlight: link.highlight || false
+    }))
+  }));
+
+  const rawBadges = incoming.complianceBadges || base.complianceBadges || [];
+  const rawSocial = incoming.socialLinks || base.socialLinks || [];
+  const normalizedSocial: FooterSocialLink[] = rawSocial.map((soc, sIdx) => ({
+    id: soc.id || `soc-${sIdx}`,
+    platform: soc.platform || 'Social',
+    label: soc.label || soc.platform || 'Social',
+    url: soc.url || '#',
+    iconName: soc.iconName || soc.platform || 'Globe',
+    enabled: soc.enabled ?? (soc.visible !== false),
+    visible: soc.visible ?? (soc.enabled !== false)
+  }));
+
+  return {
+    ...base,
+    ...incoming,
+    brandName: incoming.brandName || base.brandName,
+    brandDescription: incoming.brandDescription || base.brandDescription,
+    showNewsletter: incoming.showNewsletter ?? incoming.newsletterSection?.enabled ?? base.showNewsletter,
+    newsletterHeading: incoming.newsletterHeading || incoming.newsletterSection?.heading || base.newsletterHeading,
+    newsletterSubheading: incoming.newsletterSubheading || incoming.newsletterSection?.description || base.newsletterSubheading,
+    newsletterButtonText: incoming.newsletterButtonText || incoming.newsletterSection?.buttonText || base.newsletterButtonText,
+    newsletterPromoCode: incoming.newsletterPromoCode || incoming.newsletterSection?.discountCode || base.newsletterPromoCode,
+    newsletterDiscountText: incoming.newsletterDiscountText || incoming.newsletterSection?.discountPercentText || base.newsletterDiscountText,
+    columns: normalizedCols.length > 0 ? normalizedCols : base.columns,
+    showContactInfo: incoming.showContactInfo ?? incoming.distilleryContact?.showContactColumn ?? base.showContactInfo,
+    contactAddress: incoming.contactAddress || incoming.distilleryContact?.address || base.contactAddress,
+    contactHours: incoming.contactHours || incoming.distilleryContact?.hours || base.contactHours,
+    contactPhone: incoming.contactPhone || incoming.distilleryContact?.phone || base.contactPhone,
+    contactEmail: incoming.contactEmail || incoming.distilleryContact?.email || base.contactEmail,
+    showComplianceBadges: incoming.showComplianceBadges ?? true,
+    complianceBadges: rawBadges,
+    copyrightText: incoming.copyrightText || incoming.bottomBar?.copyrightText || base.copyrightText,
+    socialLinks: normalizedSocial.length > 0 ? normalizedSocial : base.socialLinks,
+    footerTheme: incoming.footerTheme || base.footerTheme
+  };
+};
 import {
   testFirestoreConnection,
   subscribeToCloudProducts,
@@ -48,10 +168,21 @@ import {
   subscribeToCloudCustomer,
   saveCloudCustomer,
   seedInitialCloudDatabase,
-  uploadImageToCloudStorage
+  uploadImageToCloudStorage,
+  saveCloudReview,
+  deleteCloudReview,
+  voteHelpfulCloudReview,
+  subscribeToAllCloudReviews,
+  saveCloudBallotAllocation,
+  deleteCloudBallotAllocation,
+  subscribeToCloudBallotAllocations,
+  saveCloudBallotEntry,
+  updateCloudBallotEntry,
+  deleteCloudBallotEntry,
+  subscribeToCloudBallotEntries
 } from '../lib/firebase';
 
-export type AppTab = 'home' | 'products' | 'about' | 'blog' | 'account' | 'checkout' | 'admin';
+export type { AppTab };
 
 export type CloudSyncStatus = 'connected' | 'syncing' | 'offline' | 'error';
 
@@ -73,6 +204,24 @@ interface StoreContextType {
   setSelectedArticle: (post: BlogPost | null) => void;
   ageVerified: boolean;
   setAgeVerified: (verified: boolean) => void;
+
+  // Ballot Allocations & Lottery State
+  ballotAllocations: BallotAllocation[];
+  ballotEntries: BallotEntry[];
+  activeBallotModal: BallotAllocation | null;
+  setActiveBallotModal: (alloc: BallotAllocation | null) => void;
+  registerBallotEntry: (details: {
+    allocationId: string;
+    bottlesRequested: number;
+    preferredBottleNumbers?: number[];
+    collectorNotes?: string;
+    shippingAddress?: Address;
+  }) => Promise<{ success: boolean; entry?: BallotEntry; error?: string }>;
+  drawBallotLottery: (allocationId: string, winnersCount?: number) => Promise<{ success: boolean; winnersSelected: number }>;
+  claimBallotAllocation: (entryId: string) => Promise<{ success: boolean; orderId?: string }>;
+  saveBallotAllocation: (allocation: BallotAllocation) => Promise<void>;
+  deleteBallotAllocation: (allocationId: string) => Promise<void>;
+  getUserBallotEntries: (userId?: string) => BallotEntry[];
 
   // Cloud Sync Metadata
   cloudSyncStatus: CloudSyncStatus;
@@ -166,6 +315,13 @@ interface StoreContextType {
   addCustomerAddress: (address: Omit<Address, 'id'>) => void;
   deleteCustomerAddress: (addressId: string) => void;
   setDefaultAddress: (addressId: string) => void;
+
+  // Product Reviews & Connoisseur Feedback (Cloud CRUD)
+  reviews: ProductReview[];
+  getProductReviews: (productId: string) => ProductReview[];
+  addProductReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => Promise<ProductReview>;
+  deleteProductReview: (reviewId: string) => Promise<void>;
+  voteReviewHelpful: (reviewId: string) => Promise<void>;
 
   // Reset & Re-seed demo data
   resetAllData: () => void;
@@ -271,7 +427,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [headerConfig, setHeaderConfig] = useState<HeaderCustomizationConfig>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_header`);
-      return saved ? JSON.parse(saved) : initialHeaderConfig;
+      return saved ? normalizeHeaderConfig(JSON.parse(saved)) : initialHeaderConfig;
     } catch {
       return initialHeaderConfig;
     }
@@ -280,7 +436,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [footerConfig, setFooterConfig] = useState<FooterCustomizationConfig>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_footer`);
-      return saved ? JSON.parse(saved) : initialFooterConfig;
+      return saved ? normalizeFooterConfig(JSON.parse(saved)) : initialFooterConfig;
     } catch {
       return initialFooterConfig;
     }
@@ -302,6 +458,36 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return [];
     }
   });
+
+  const [reviews, setReviews] = useState<ProductReview[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_reviews`);
+      return saved ? JSON.parse(saved) : initialReviews;
+    } catch {
+      return initialReviews;
+    }
+  });
+
+  // Ballot Allocations & Collector Entries State
+  const [ballotAllocations, setBallotAllocations] = useState<BallotAllocation[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_ballot_allocations`);
+      return saved ? JSON.parse(saved) : initialBallotAllocations;
+    } catch {
+      return initialBallotAllocations;
+    }
+  });
+
+  const [ballotEntries, setBallotEntries] = useState<BallotEntry[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_ballot_entries`);
+      return saved ? JSON.parse(saved) : initialBallotEntries;
+    } catch {
+      return initialBallotEntries;
+    }
+  });
+
+  const [activeBallotModal, setActiveBallotModal] = useState<BallotAllocation | null>(null);
 
   // Customer Session & Login State
   const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState<boolean>(() => {
@@ -384,6 +570,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_cart`, JSON.stringify(cart)); } catch (_) {}
   }, [cart]);
 
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_reviews`, JSON.stringify(reviews)); } catch (_) {}
+  }, [reviews]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_ballot_allocations`, JSON.stringify(ballotAllocations)); } catch (_) {}
+  }, [ballotAllocations]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_ballot_entries`, JSON.stringify(ballotEntries)); } catch (_) {}
+  }, [ballotEntries]);
+
   // ==========================================
   // REAL-TIME FIRESTORE SUBSCRIPTIONS & SYNC
   // ==========================================
@@ -394,6 +592,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let unsubBlog: () => void = () => {};
     let unsubContent: () => void = () => {};
     let unsubCustomer: () => void = () => {};
+    let unsubReviews: () => void = () => {};
+    let unsubBallotAllocations: () => void = () => {};
+    let unsubBallotEntries: () => void = () => {};
 
     let hasReceivedInitialProducts = false;
 
@@ -418,7 +619,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               homeContent: initialHomeContent,
               aboutContent: initialAboutContent,
               adminSettings: initialAdminSettings,
-              customer: initialCustomer
+              customer: initialCustomer,
+              reviews: initialReviews,
+              ballotAllocations: initialBallotAllocations,
+              ballotEntries: initialBallotEntries
             }).catch(e => console.warn('Cloud seed notice:', e));
           }
           hasReceivedInitialProducts = true;
@@ -456,8 +660,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (contents.home) setHomeContent(contents.home);
           if (contents.about) setAboutContent(contents.about);
           if (contents.settings) setAdminSettings(contents.settings);
-          if (contents.header) setHeaderConfig(contents.header);
-          if (contents.footer) setFooterConfig(contents.footer);
+          if (contents.header) setHeaderConfig(normalizeHeaderConfig(contents.header));
+          if (contents.footer) setFooterConfig(normalizeFooterConfig(contents.footer));
           setCloudSyncStatus('connected');
           setLastSyncedAt(new Date());
         });
@@ -466,6 +670,33 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         unsubCustomer = subscribeToCloudCustomer(customer.id, (cloudCust) => {
           if (cloudCust) {
             setCustomer(cloudCust);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
+        // 7. Product Reviews Listener
+        unsubReviews = subscribeToAllCloudReviews((cloudRevs) => {
+          if (cloudRevs.length > 0) {
+            setReviews(cloudRevs);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
+        // 8. Ballot Allocations Listener
+        unsubBallotAllocations = subscribeToCloudBallotAllocations((cloudAllocations) => {
+          if (cloudAllocations.length > 0) {
+            setBallotAllocations(cloudAllocations);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
+        // 9. Ballot Entries Listener
+        unsubBallotEntries = subscribeToCloudBallotEntries((cloudEntries) => {
+          if (cloudEntries.length > 0) {
+            setBallotEntries(cloudEntries);
             setCloudSyncStatus('connected');
             setLastSyncedAt(new Date());
           }
@@ -487,6 +718,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubBlog();
       unsubContent();
       unsubCustomer();
+      unsubReviews();
+      unsubBallotAllocations();
+      unsubBallotEntries();
     };
   }, []);
 
@@ -504,7 +738,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         adminSettings,
         customer,
         headerConfig,
-        footerConfig
+        footerConfig,
+        reviews,
+        ballotAllocations,
+        ballotEntries
       });
       setCloudSyncStatus('connected');
       setLastSyncedAt(new Date());
@@ -514,7 +751,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } finally {
       setIsCloudSeeding(false);
     }
-  }, [products, inventoryLots, orders, blogPosts, homeContent, aboutContent, adminSettings, customer, headerConfig, footerConfig]);
+  }, [products, inventoryLots, orders, blogPosts, homeContent, aboutContent, adminSettings, customer, headerConfig, footerConfig, reviews]);
 
   const uploadMedia = useCallback(async (
     fileOrDataUri: File | string,
@@ -863,13 +1100,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   const updateHeaderConfig = (config: HeaderCustomizationConfig) => {
-    setHeaderConfig(config);
-    saveCloudSiteContent('header', config).catch(e => console.warn('Cloud sync header config notice:', e));
+    const normalized = normalizeHeaderConfig(config);
+    setHeaderConfig(normalized);
+    saveCloudSiteContent('header', normalized).catch(e => console.warn('Cloud sync header config notice:', e));
   };
 
   const updateFooterConfig = (config: FooterCustomizationConfig) => {
-    setFooterConfig(config);
-    saveCloudSiteContent('footer', config).catch(e => console.warn('Cloud sync footer config notice:', e));
+    const normalized = normalizeFooterConfig(config);
+    setFooterConfig(normalized);
+    saveCloudSiteContent('footer', normalized).catch(e => console.warn('Cloud sync footer config notice:', e));
   };
 
   const resetHeaderFooterConfig = () => {
@@ -1109,6 +1348,381 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
+  // Product Reviews & Connoisseur Feedback
+  const getProductReviews = useCallback((productId: string): ProductReview[] => {
+    return reviews.filter(r => r.productId === productId);
+  }, [reviews]);
+
+  const addProductReview = async (reviewData: Omit<ProductReview, 'id' | 'createdAt'>): Promise<ProductReview> => {
+    const newReview: ProductReview = {
+      ...reviewData,
+      id: `rev-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      helpfulCount: reviewData.helpfulCount ?? 0,
+      helpfulVoters: reviewData.helpfulVoters ?? [],
+      date: reviewData.date || new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const updatedReviews = [newReview, ...reviews];
+    setReviews(updatedReviews);
+
+    // Recalculate product rating & reviewCount
+    const productReviews = updatedReviews.filter(r => r.productId === reviewData.productId);
+    const totalRating = productReviews.reduce((sum, r) => sum + r.rating, 0);
+    const avgRating = Number((totalRating / (productReviews.length || 1)).toFixed(2));
+    const newReviewCount = productReviews.length;
+
+    setProducts(prev => prev.map(p => {
+      if (p.id === reviewData.productId) {
+        const updatedProduct = { ...p, rating: avgRating, reviewCount: newReviewCount };
+        saveCloudProduct(updatedProduct).catch(e => console.warn('Sync review update to product:', e));
+        return updatedProduct;
+      }
+      return p;
+    }));
+
+    // Persist to Cloud Firestore
+    saveCloudReview(newReview).catch(e => console.warn('Cloud save review error:', e));
+
+    return newReview;
+  };
+
+  const deleteProductReview = async (reviewId: string): Promise<void> => {
+    const reviewToDelete = reviews.find(r => r.id === reviewId);
+    const updatedReviews = reviews.filter(r => r.id !== reviewId);
+    setReviews(updatedReviews);
+
+    if (reviewToDelete) {
+      const productReviews = updatedReviews.filter(r => r.productId === reviewToDelete.productId);
+      const totalRating = productReviews.reduce((sum, r) => sum + r.rating, 0);
+      const avgRating = productReviews.length > 0 ? Number((totalRating / productReviews.length).toFixed(2)) : 5.0;
+      const newReviewCount = productReviews.length;
+
+      setProducts(prev => prev.map(p => {
+        if (p.id === reviewToDelete.productId) {
+          const updatedProduct = { ...p, rating: avgRating, reviewCount: newReviewCount };
+          saveCloudProduct(updatedProduct).catch(e => console.warn('Sync review delete to product:', e));
+          return updatedProduct;
+        }
+        return p;
+      }));
+    }
+
+    deleteCloudReview(reviewId).catch(e => console.warn('Cloud delete review error:', e));
+  };
+
+  const voteReviewHelpful = async (reviewId: string): Promise<void> => {
+    const voterId = customer.id || 'guest-voter';
+    setReviews(prev => prev.map(r => {
+      if (r.id === reviewId) {
+        const currentVoters = r.helpfulVoters || [];
+        const alreadyVoted = currentVoters.includes(voterId);
+        const updatedVoters = alreadyVoted ? currentVoters.filter(v => v !== voterId) : [...currentVoters, voterId];
+        return {
+          ...r,
+          helpfulCount: updatedVoters.length,
+          helpfulVoters: updatedVoters
+        };
+      }
+      return r;
+    }));
+    voteHelpfulCloudReview(reviewId, voterId).catch(e => console.warn('Cloud vote review error:', e));
+  };
+
+  // ==========================================
+  // BALLOT ALLOCATIONS & LOTTERY METHODS
+  // ==========================================
+  const getUserBallotEntries = useCallback((userId?: string): BallotEntry[] => {
+    const targetId = userId || customer.id;
+    return ballotEntries.filter(e => e.customerId === targetId);
+  }, [ballotEntries, customer.id]);
+
+  const registerBallotEntry = async (details: {
+    allocationId: string;
+    bottlesRequested: number;
+    preferredBottleNumbers?: number[];
+    collectorNotes?: string;
+    shippingAddress?: Address;
+  }): Promise<{ success: boolean; entry?: BallotEntry; error?: string }> => {
+    const alloc = ballotAllocations.find(a => a.id === details.allocationId);
+    if (!alloc) {
+      return { success: false, error: 'Allocation release not found.' };
+    }
+    if (alloc.status !== 'open') {
+      return { success: false, error: 'This allocation ballot is not currently accepting entries.' };
+    }
+    const maxAllowed = alloc.maxBottlesPerEntrant || 1;
+    if (details.bottlesRequested > maxAllowed || details.bottlesRequested < 1) {
+      return { success: false, error: `You may request between 1 and ${maxAllowed} bottle(s).` };
+    }
+
+    // Check if customer already entered
+    const existing = ballotEntries.find(e => e.allocationId === details.allocationId && e.customerId === customer.id);
+    if (existing) {
+      return { success: false, error: `You are already registered for this draw (Ticket ${existing.ticketNumber}).` };
+    }
+
+    const ticketNumber = `BAL-2026-${Math.floor(100000 + Math.random() * 900000)}`;
+    const entrantNumber = (alloc.totalEntrants || 0) + 1;
+
+    const newEntry: BallotEntry = {
+      id: `entry-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      allocationId: alloc.id,
+      allocationTitle: alloc.title,
+      productName: alloc.productName,
+      bottlePrice: alloc.bottlePrice,
+      customerId: customer.id,
+      customerName: customer.name,
+      customerEmail: customer.email,
+      customerPhone: customer.phone,
+      loyaltyTier: customer.loyaltyTier,
+      bottlesRequested: details.bottlesRequested,
+      preferredBottleNumbers: details.preferredBottleNumbers || [],
+      collectorNotes: details.collectorNotes || '',
+      ticketNumber,
+      entrantNumber,
+      status: 'registered',
+      registeredAt: new Date().toISOString(),
+      shippingAddress: details.shippingAddress || customer.addresses?.[0]
+    };
+
+    const updatedEntries = [newEntry, ...ballotEntries];
+    setBallotEntries(updatedEntries);
+
+    // Update allocation counts
+    const updatedAllocations = ballotAllocations.map(a => {
+      if (a.id === alloc.id) {
+        return {
+          ...a,
+          totalEntrants: (a.totalEntrants || 0) + 1,
+          totalBottlesRequested: (a.totalBottlesRequested || 0) + details.bottlesRequested
+        };
+      }
+      return a;
+    });
+    setBallotAllocations(updatedAllocations);
+
+    // Sync to Cloud
+    saveCloudBallotEntry(newEntry).catch(e => console.warn('Save cloud ballot entry notice:', e));
+    const targetAlloc = updatedAllocations.find(a => a.id === alloc.id);
+    if (targetAlloc) {
+      saveCloudBallotAllocation(targetAlloc).catch(e => console.warn('Save cloud ballot alloc notice:', e));
+    }
+
+    return { success: true, entry: newEntry };
+  };
+
+  const drawBallotLottery = async (allocationId: string, winnersCount?: number): Promise<{ success: boolean; winnersSelected: number }> => {
+    const alloc = ballotAllocations.find(a => a.id === allocationId);
+    if (!alloc) return { success: false, winnersSelected: 0 };
+
+    const pool = ballotEntries.filter(e => e.allocationId === allocationId && (e.status === 'registered' || e.status === 'waitlisted'));
+    if (pool.length === 0) return { success: false, winnersSelected: 0 };
+
+    const targetWinners = winnersCount ?? Math.min(alloc.totalBottlesAvailable, pool.length);
+    
+    // Random lottery shuffle
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    const selectedWinners = shuffled.slice(0, targetWinners);
+
+    const now = new Date();
+    const claimDeadline = new Date(now.getTime() + 72 * 60 * 60 * 1000).toISOString(); // 72 hours
+
+    const winnerIds = new Set(selectedWinners.map(w => w.id));
+
+    let serialCounter = 1;
+    const updatedEntries = ballotEntries.map(entry => {
+      if (entry.allocationId === allocationId) {
+        if (winnerIds.has(entry.id)) {
+          const serials: string[] = [];
+          for (let i = 0; i < entry.bottlesRequested; i++) {
+            const numStr = String(serialCounter++).padStart(3, '0');
+            serials.push(`${numStr}/${alloc.totalBottlesAvailable}`);
+          }
+          const updated: BallotEntry = {
+            ...entry,
+            status: 'selected_winner',
+            selectedAt: now.toISOString(),
+            claimDeadline,
+            assignedBottleNumbers: serials
+          };
+          saveCloudBallotEntry(updated).catch(e => console.warn('Update winner entry cloud:', e));
+          return updated;
+        } else if (entry.status === 'registered') {
+          const updated: BallotEntry = {
+            ...entry,
+            status: 'waitlisted'
+          };
+          saveCloudBallotEntry(updated).catch(e => console.warn('Update waitlisted entry cloud:', e));
+          return updated;
+        }
+      }
+      return entry;
+    });
+
+    setBallotEntries(updatedEntries);
+
+    const updatedAlloc: BallotAllocation = {
+      ...alloc,
+      status: 'drawing_completed',
+      drawDate: now.toISOString()
+    };
+
+    setBallotAllocations(prev => prev.map(a => a.id === allocationId ? updatedAlloc : a));
+    saveCloudBallotAllocation(updatedAlloc).catch(e => console.warn('Update allocation cloud:', e));
+
+    return { success: true, winnersSelected: selectedWinners.length };
+  };
+
+  const claimBallotAllocation = async (entryId: string): Promise<{ success: boolean; orderId?: string }> => {
+    const entry = ballotEntries.find(e => e.id === entryId);
+    if (!entry || entry.status !== 'selected_winner') {
+      return { success: false };
+    }
+
+    const alloc = ballotAllocations.find(a => a.id === entry.allocationId);
+    if (!alloc) return { success: false };
+
+    const orderNumber = `ZUS-ALLOC-${Math.floor(10000 + Math.random() * 90000)}`;
+    const itemTotal = entry.bottlePrice * entry.bottlesRequested;
+    const shippingFee = itemTotal >= adminSettings.freeShippingThreshold ? 0 : adminSettings.standardShippingRate;
+    const tax = Number((itemTotal * (adminSettings.taxRatePercent / 100)).toFixed(2));
+    const total = itemTotal + shippingFee + tax;
+
+    const baseProduct = products.find(p => p.id === alloc.linkedProductId) || products[0];
+
+    const orderedProduct: SpiritProduct = {
+      id: alloc.linkedProductId || `prod-${alloc.id}`,
+      name: alloc.productName,
+      tagline: alloc.editionName,
+      category: alloc.spiritCategory,
+      price: alloc.bottlePrice,
+      abv: `${alloc.abvPercent}%`,
+      proof: Math.round(alloc.abvPercent * 2),
+      bottleSize: alloc.bottleSize || '750ml',
+      batchNumber: alloc.editionName,
+      caskNumber: alloc.caskType,
+      caskType: alloc.caskType,
+      ageYears: parseInt(alloc.ageStatement, 10) || 12,
+      stockQuantity: alloc.bottlesRemaining,
+      lowStockThreshold: 5,
+      distillerName: 'Zookas Unity Master Distiller',
+      distillerOrigin: 'Cellar Vaults',
+      description: alloc.description,
+      tastingNotes: {
+        aroma: alloc.tastingNotes.slice(0, 2),
+        palate: alloc.tastingNotes.slice(2, 4),
+        finish: alloc.tastingNotes.slice(4)
+      },
+      cocktailPairing: baseProduct?.cocktailPairing || {
+        name: 'Neat in Glencairn',
+        tagline: 'Pure Cask Expression',
+        ingredients: ['2 oz Rare Spirit'],
+        instructions: 'Serve at room temperature in a crystal Glencairn glass.',
+        difficulty: 'Easy',
+        glassware: 'Glencairn Glass'
+      },
+      awards: ['Master Distiller Private Allocation 2026'],
+      images: [alloc.imageUrl],
+      featured: true,
+      isLimitedRelease: true,
+      rating: 5.0,
+      reviewCount: 1,
+      releaseYear: alloc.distillationYear || 2026
+    };
+
+    const newOrder: Order = {
+      id: `ord-ballot-${Date.now()}`,
+      orderNumber,
+      date: new Date().toISOString(),
+      status: 'Batch Sealed',
+      items: [
+        {
+          product: orderedProduct,
+          quantity: entry.bottlesRequested,
+          giftBox: true,
+          customEngraving: `Bottle ${entry.assignedBottleNumbers?.join(', ') || 'Official Rare Allocation'}`
+        }
+      ],
+      subtotal: itemTotal,
+      discount: 0,
+      giftBoxFee: 0,
+      shipping: shippingFee,
+      tax,
+      total,
+      carrier: 'White-Glove Rare Spirits Bonded Courier',
+      ageConfirmed: true,
+      loyaltyPointsEarned: Math.floor(total * (adminSettings.pointsPerDollar || 10)),
+      loyaltyPointsUsed: 0,
+      shippingAddress: entry.shippingAddress || customer.addresses?.[0] || {
+        id: 'addr-default',
+        fullName: entry.customerName,
+        street: '100 Heritage Cask Way',
+        city: 'Napa',
+        state: 'CA',
+        zipCode: '94558',
+        country: 'United States',
+        phone: entry.customerPhone || '+1 (555) 000-0000',
+        isDefault: true
+      },
+      payment: {
+        type: 'cask_wire',
+        cardBrand: 'Vault Allocation Secured Direct',
+        transactionId: `txn_ballot_${Date.now()}`,
+        paidAt: new Date().toISOString()
+      },
+      trackingNumber: `ZUS-ALLOC-${Math.floor(10000000 + Math.random() * 90000000)}`,
+      notes: `Private Collector Ballot Winner Allocation: Ticket ${entry.ticketNumber}. Assigned Bottles: ${entry.assignedBottleNumbers?.join(', ')}`
+    };
+
+    // Update orders
+    setOrders(prev => [newOrder, ...prev]);
+    saveCloudOrder(newOrder).catch(e => console.warn('Save ballot order cloud:', e));
+
+    // Mark entry as claimed
+    const updatedEntry: BallotEntry = {
+      ...entry,
+      status: 'claimed_paid',
+      claimedAt: new Date().toISOString()
+    };
+    setBallotEntries(prev => prev.map(e => e.id === entryId ? updatedEntry : e));
+    saveCloudBallotEntry(updatedEntry).catch(e => console.warn('Save claimed entry cloud:', e));
+
+    // Update remaining count on allocation
+    setBallotAllocations(prev => prev.map(a => {
+      if (a.id === alloc.id) {
+        const remaining = Math.max(0, a.bottlesRemaining - entry.bottlesRequested);
+        const updated: BallotAllocation = {
+          ...a,
+          bottlesRemaining: remaining,
+          status: remaining === 0 ? 'sold_out' : a.status
+        };
+        saveCloudBallotAllocation(updated).catch(e => console.warn('Update alloc count cloud:', e));
+        return updated;
+      }
+      return a;
+    }));
+
+    return { success: true, orderId: newOrder.id };
+  };
+
+  const saveBallotAllocation = async (allocation: BallotAllocation): Promise<void> => {
+    setBallotAllocations(prev => {
+      const exists = prev.some(a => a.id === allocation.id);
+      if (exists) {
+        return prev.map(a => a.id === allocation.id ? allocation : a);
+      }
+      return [allocation, ...prev];
+    });
+    await saveCloudBallotAllocation(allocation);
+  };
+
+  const deleteBallotAllocation = async (allocationId: string): Promise<void> => {
+    setBallotAllocations(prev => prev.filter(a => a.id !== allocationId));
+    await deleteCloudBallotAllocation(allocationId);
+  };
+
   const resetAllData = () => {
     setProducts(initialProducts);
     setInventoryLots(initialInventoryLots);
@@ -1120,6 +1734,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setAdminSettings(initialAdminSettings);
     setHeaderConfig(initialHeaderConfig);
     setFooterConfig(initialFooterConfig);
+    setReviews(initialReviews);
+    setBallotAllocations(initialBallotAllocations);
+    setBallotEntries(initialBallotEntries);
     setCart([]);
     try { localStorage.clear(); } catch (_) {}
     // Reseed cloud
@@ -1145,6 +1762,16 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setSelectedArticle,
         ageVerified,
         setAgeVerified,
+        ballotAllocations,
+        ballotEntries,
+        activeBallotModal,
+        setActiveBallotModal,
+        registerBallotEntry,
+        drawBallotLottery,
+        claimBallotAllocation,
+        saveBallotAllocation,
+        deleteBallotAllocation,
+        getUserBallotEntries,
         cloudSyncStatus,
         lastSyncedAt,
         isCloudSeeding,
@@ -1172,6 +1799,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         adminSettings,
         headerConfig,
         footerConfig,
+        reviews,
+        getProductReviews,
+        addProductReview,
+        deleteProductReview,
+        voteReviewHelpful,
         addToCart,
         removeFromCart,
         updateCartQuantity,

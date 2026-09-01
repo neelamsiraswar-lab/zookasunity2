@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useStore, AppTab } from '../../context/StoreContext';
+import React, { useState, useEffect } from 'react';
+import { useStore, AppTab, normalizeHeaderConfig } from '../../context/StoreContext';
 import { HeaderCustomizationConfig, HeaderNavItem } from '../../types';
 import { initialHeaderConfig } from '../../data/initialData';
 import { 
@@ -47,10 +47,11 @@ const ICON_OPTIONS = [
 const AVAILABLE_TABS: { value: AppTab; label: string }[] = [
   { value: 'home', label: 'Home Page' },
   { value: 'products', label: 'Spirits Store Catalog' },
+  { value: 'allocations', label: 'Rare Allocations & Ballots' },
   { value: 'about', label: 'Our Story & Distillery' },
   { value: 'blog', label: 'Tasting Journal & Mixology' },
   { value: 'account', label: 'Customer Account / Vault' },
-  { value: 'cart', label: 'Shopping Cart Checkout' },
+  { value: 'checkout', label: 'Checkout & Orders' },
   { value: 'admin', label: 'Admin CMS Management' }
 ];
 
@@ -64,8 +65,14 @@ const COLOR_PRESETS = [
 
 export const HeaderCustomizer: React.FC = () => {
   const { headerConfig, updateHeaderConfig, adminSettings } = useStore();
-  const [formData, setFormData] = useState<HeaderCustomizationConfig>(headerConfig || initialHeaderConfig);
+  const [formData, setFormData] = useState<HeaderCustomizationConfig>(() => normalizeHeaderConfig(headerConfig || initialHeaderConfig));
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (headerConfig) {
+      setFormData(normalizeHeaderConfig(headerConfig));
+    }
+  }, [headerConfig]);
 
   const handleSave = () => {
     updateHeaderConfig(formData);
@@ -75,8 +82,9 @@ export const HeaderCustomizer: React.FC = () => {
 
   const handleReset = () => {
     if (confirm('Reset header and navigation settings to factory distillery defaults?')) {
-      setFormData(initialHeaderConfig);
-      updateHeaderConfig(initialHeaderConfig);
+      const normalized = normalizeHeaderConfig(initialHeaderConfig);
+      setFormData(normalized);
+      updateHeaderConfig(normalized);
       setSaveStatus('Reset to default header settings.');
       setTimeout(() => setSaveStatus(null), 3000);
     }
@@ -92,13 +100,13 @@ export const HeaderCustomizer: React.FC = () => {
     };
     setFormData(prev => ({
       ...prev,
-      navItems: [...prev.navItems, newItem]
+      navItems: [...(prev.navItems || []), newItem]
     }));
   };
 
   const updateNavItem = (index: number, updates: Partial<HeaderNavItem>) => {
     setFormData(prev => {
-      const next = [...prev.navItems];
+      const next = [...(prev.navItems || [])];
       next[index] = { ...next[index], ...updates };
       return { ...prev, navItems: next };
     });
@@ -107,17 +115,18 @@ export const HeaderCustomizer: React.FC = () => {
   const removeNavItem = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      navItems: prev.navItems.filter((_, i) => i !== index)
+      navItems: (prev.navItems || []).filter((_, i) => i !== index)
     }));
   };
 
   const moveNavItem = (index: number, direction: 'up' | 'down') => {
-    if ((direction === 'up' && index === 0) || (direction === 'down' && index === formData.navItems.length - 1)) {
+    const navItems = formData.navItems || [];
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === navItems.length - 1)) {
       return;
     }
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     setFormData(prev => {
-      const items = [...prev.navItems];
+      const items = [...(prev.navItems || [])];
       const temp = items[index];
       items[index] = items[targetIndex];
       items[targetIndex] = temp;
@@ -221,7 +230,7 @@ export const HeaderCustomizer: React.FC = () => {
 
             {/* Nav links preview */}
             <div className="hidden md:flex items-center gap-1.5">
-              {formData.navItems.filter(i => i.visible !== false).map((item) => (
+              {(formData.navItems || []).filter(i => i.visible !== false).map((item) => (
                 <span key={item.id} className="px-2.5 py-1 text-xs text-stone-300 bg-stone-900 rounded-lg flex items-center gap-1.5 border border-stone-800">
                   <span>{item.label}</span>
                   {item.badge && (
@@ -549,7 +558,7 @@ export const HeaderCustomizer: React.FC = () => {
               <div>
                 <h3 className="text-sm font-serif font-bold text-stone-100 uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-400" />
-                  <span>Main Navigation Links ({formData.navItems.length})</span>
+                  <span>Main Navigation Links ({(formData.navItems || []).length})</span>
                 </h3>
                 <p className="text-xs text-stone-400 mt-0.5">
                   Re-order, rename, or assign badges and icons to top-level menu tabs.
@@ -567,7 +576,7 @@ export const HeaderCustomizer: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              {formData.navItems.map((item, index) => (
+              {(formData.navItems || []).map((item, index) => (
                 <div key={item.id} className="p-4 bg-stone-950 border border-stone-800 rounded-xl space-y-3">
                   <div className="flex items-center justify-between gap-2 border-b border-stone-800/80 pb-2">
                     <div className="flex items-center gap-2">

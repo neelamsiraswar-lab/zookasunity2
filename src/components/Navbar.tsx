@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, AppTab } from '../context/StoreContext';
+import { useStore, AppTab, normalizeHeaderConfig } from '../context/StoreContext';
 import { 
   ShoppingBag, 
   Search, 
@@ -71,28 +71,7 @@ export const Navbar: React.FC = () => {
   const [showCloudPopover, setShowCloudPopover] = useState<boolean>(false);
   const [showAccountMenu, setShowAccountMenu] = useState<boolean>(false);
 
-  const effectiveHeader = headerConfig || {
-    brandName: adminSettings.brandName,
-    brandTagline: 'Artisanal Distillery',
-    logoIcon: 'Flame',
-    stickyHeader: true,
-    showAnnouncementBar: true,
-    announcementText: homeContent.announcementText || 'Complimentary shipping on single cask allocations over $200 with code SPIRIT200',
-    navItems: [
-      { id: 'nav-1', label: 'Home', tab: 'home', iconName: 'Flame', visible: true },
-      { id: 'nav-2', label: 'Spirits Store', tab: 'products', iconName: 'Wine', visible: true, badge: 'New Batch', badgeColor: 'amber' },
-      { id: 'nav-3', label: 'Our Story', tab: 'about', iconName: 'Building2', visible: true },
-      { id: 'nav-4', label: 'Tasting Journal', tab: 'blog', iconName: 'BookOpen', visible: true },
-      { id: 'nav-5', label: 'My Account', tab: 'account', iconName: 'User', visible: true }
-    ],
-    showSearchBar: true,
-    searchPlaceholder: 'Search spirits, casks, distillers...',
-    showCloudStatus: true,
-    showCustomerAccount: true,
-    showAdminButton: true,
-    adminButtonText: 'Admin CMS',
-    showCartButton: true
-  };
+  const effectiveHeader = normalizeHeaderConfig(headerConfig);
 
   const visibleNavItems = (effectiveHeader.navItems || []).filter(item => item.visible !== false);
   const BrandIcon = getHeaderIcon(effectiveHeader.logoIcon);

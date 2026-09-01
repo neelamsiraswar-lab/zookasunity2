@@ -129,6 +129,67 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["id", "email"]
+    },
+    "reviews": {
+      "title": "Product Reviews & Connoisseur Ratings",
+      "description": "Customer feedback, star ratings, and tasting notes for spirits",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "rating": { "type": "number" },
+        "title": { "type": "string" },
+        "comment": { "type": "string" },
+        "verifiedBuyer": { "type": "boolean" },
+        "recommended": { "type": "boolean" },
+        "tastingTags": { "type": "array", "items": { "type": "string" } },
+        "helpfulCount": { "type": "number" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "productId", "userName", "rating", "comment"]
+    },
+    "ballot_allocations": {
+      "title": "Private Vault Ballot Allocations",
+      "description": "Ultra-rare limited release spirit allocations and lottery draws",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "spiritCategory": { "type": "string" },
+        "editionNumber": { "type": "string" },
+        "bottleYieldTotal": { "type": "number" },
+        "bottlesAvailable": { "type": "number" },
+        "pricePerBottle": { "type": "number" },
+        "status": { "type": "string" },
+        "drawDate": { "type": "string" },
+        "entrantsCount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "bottleYieldTotal", "pricePerBottle", "status"]
+    },
+    "ballot_entries": {
+      "title": "Collector Ballot Registrations",
+      "description": "Collector interest submissions, lottery ticket numbers, and draw outcomes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "allocationId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "bottlesRequested": { "type": "number" },
+        "ticketNumber": { "type": "string" },
+        "status": { "type": "string" },
+        "registeredAt": { "type": "string" }
+      },
+      "required": ["id", "allocationId", "userName", "userEmail", "bottlesRequested", "status"]
     }
   },
   "firestore": {
@@ -155,6 +216,18 @@
     "/customers/{customerId}": {
       "schema": "customers",
       "description": "Customer profiles and reward points"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "reviews",
+      "description": "Customer tasting reviews and ratings"
+    },
+    "/ballot_allocations/{allocationId}": {
+      "schema": "ballot_allocations",
+      "description": "Ultra-rare spirit ballot allocations"
+    },
+    "/ballot_entries/{entryId}": {
+      "schema": "ballot_entries",
+      "description": "Collector ballot lottery registration entries"
     }
   }
 }

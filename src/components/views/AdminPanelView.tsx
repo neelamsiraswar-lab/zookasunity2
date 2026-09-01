@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../context/StoreContext';
+import { formatPrice } from '../../utils/currency';
 import { CloudImageUploader } from '../CloudImageUploader';
 import { AdminAuthLockScreen } from '../AdminAuthLockScreen';
 import { HeaderCustomizer } from '../admin/HeaderCustomizer';
 import { FooterCustomizer } from '../admin/FooterCustomizer';
+import { BallotDrawsAdmin } from '../admin/BallotDrawsAdmin';
 import { 
   SpiritProduct, 
   DistillerInventoryItem, 
@@ -74,7 +76,9 @@ import {
   ShieldAlert,
   Key,
   LayoutTemplate,
-  PanelBottom
+  PanelBottom,
+  Crown,
+  Ticket
 } from 'lucide-react';
 
 export const AdminPanelView: React.FC = () => {
@@ -101,6 +105,8 @@ export const AdminPanelView: React.FC = () => {
     addBlogPost,
     deleteBlogPost,
     resetToDefaultData,
+    ballotAllocations,
+    ballotEntries,
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
@@ -131,7 +137,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'orders' | 'cms_home' | 'cms_about' | 'cms_header' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_home' | 'cms_about' | 'cms_header' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -923,6 +929,7 @@ export const AdminPanelView: React.FC = () => {
           { id: 'analytics', label: 'Financials & KPI Overview', icon: BarChart3 },
           { id: 'inventory', label: `Distiller Real-Time Cask Tracker (${inventoryLots.length})`, icon: Layers },
           { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
+          { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
           { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
           { id: 'cms_header', label: 'Header & Navigation CMS', icon: LayoutTemplate },
           { id: 'cms_home', label: 'Home Page CMS', icon: FileEdit },
@@ -961,7 +968,7 @@ export const AdminPanelView: React.FC = () => {
                 <DollarSign className="w-4 h-4 text-amber-400" />
               </span>
               <strong className="font-serif text-3xl font-bold text-amber-400 block">
-                ${totalRevenue.toFixed(2)}
+                {formatPrice(totalRevenue, adminSettings.currencySymbol)}
               </strong>
               <span className="text-[11px] text-emerald-400 flex items-center gap-1">
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -1174,7 +1181,7 @@ export const AdminPanelView: React.FC = () => {
                         {p.name}
                       </h4>
                       <p className="text-xs text-stone-400 font-mono">
-                        ${p.salePrice ?? p.price} • {p.abv}
+                        {formatPrice(p.salePrice ?? p.price, adminSettings.currencySymbol)} • {p.abv}
                       </p>
                       <p className="text-[11px] text-stone-500 truncate">
                         Stock: <strong className="text-stone-300">{p.stockQuantity} btls</strong>
@@ -1248,7 +1255,7 @@ export const AdminPanelView: React.FC = () => {
                       <span>Invoice</span>
                     </button>
                     <span className="font-serif font-bold text-stone-100 text-base">
-                      ${ord.total.toFixed(2)}
+                      {formatPrice(ord.total, adminSettings.currencySymbol)}
                     </span>
                   </div>
                 </div>
@@ -2705,7 +2712,26 @@ export const AdminPanelView: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-stone-400 mb-1 font-bold">Currency Symbol</label>
+              <select
+                value={cmsSettingsState.currencySymbol || '₹'}
+                onChange={(e) => setCmsSettingsState({ ...cmsSettingsState, currencySymbol: e.target.value })}
+                className="w-full p-2.5 bg-stone-950 border border-stone-700 rounded-lg text-stone-100"
+              >
+                <option value="₹">₹ (INR - Indian Rupee)</option>
+                <option value="$">$ (USD / CAD / AUD)</option>
+                <option value="£">£ (GBP - British Pound)</option>
+                <option value="€">€ (EUR - Euro)</option>
+                <option value="¥">¥ (JPY - Japanese Yen)</option>
+                <option value="A$">A$ (Australian Dollar)</option>
+                <option value="CA$">CA$ (Canadian Dollar)</option>
+                <option value="CHF">CHF (Swiss Franc)</option>
+                <option value="AED">AED (UAE Dirham)</option>
+                <option value="SGD">SGD (Singapore Dollar)</option>
+              </select>
+            </div>
             <div>
               <label className="block text-stone-400 mb-1 font-bold">Spirits Tax Rate (%)</label>
               <input
@@ -2717,7 +2743,7 @@ export const AdminPanelView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-stone-400 mb-1 font-bold">Insured Courier Fee ($)</label>
+              <label className="block text-stone-400 mb-1 font-bold">Insured Courier Fee ({cmsSettingsState.currencySymbol || '₹'})</label>
               <input
                 type="number"
                 value={cmsSettingsState.shippingFee}
@@ -2726,7 +2752,7 @@ export const AdminPanelView: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-stone-400 mb-1 font-bold">Free Shipping Threshold ($)</label>
+              <label className="block text-stone-400 mb-1 font-bold">Free Shipping Threshold ({cmsSettingsState.currencySymbol || '₹'})</label>
               <input
                 type="number"
                 value={cmsSettingsState.freeShippingThreshold}
@@ -2896,6 +2922,9 @@ export const AdminPanelView: React.FC = () => {
           </div>
         </form>
       )}
+
+      {/* RARE ALLOCATIONS & BALLOT DRAWS */}
+      {activeTab === 'ballots' && <BallotDrawsAdmin />}
 
       {/* HEADER & NAVIGATION CMS */}
       {activeTab === 'cms_header' && <HeaderCustomizer />}

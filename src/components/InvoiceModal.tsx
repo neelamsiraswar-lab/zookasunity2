@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
+import { formatPrice } from '../utils/currency';
 import { 
   X, 
   Printer, 
@@ -168,7 +169,7 @@ export const InvoiceModal: React.FC = () => {
                             {item.quantity}
                           </td>
                           <td className="py-3 pl-4 text-right font-bold text-amber-400 print:text-black">
-                            ${(unitPrice * item.quantity).toFixed(2)}
+                            {formatPrice(unitPrice * item.quantity, adminSettings.currencySymbol)}
                           </td>
                         </tr>
                       );
@@ -192,31 +193,31 @@ export const InvoiceModal: React.FC = () => {
               <div className="w-full sm:w-64 space-y-2 text-xs">
                 <div className="flex justify-between text-stone-300 print:text-gray-700">
                   <span>Subtotal:</span>
-                  <span>${order.subtotal.toFixed(2)}</span>
+                  <span>{formatPrice(order.subtotal, adminSettings.currencySymbol)}</span>
                 </div>
                 {order.giftBoxFee > 0 && (
                   <div className="flex justify-between text-stone-300 print:text-gray-700">
                     <span>Artisanal Packaging:</span>
-                    <span>${order.giftBoxFee.toFixed(2)}</span>
+                    <span>+{formatPrice(order.giftBoxFee, adminSettings.currencySymbol)}</span>
                   </div>
                 )}
                 {order.discount > 0 && (
                   <div className="flex justify-between text-emerald-400 print:text-emerald-700">
                     <span>Discount:</span>
-                    <span>-${order.discount.toFixed(2)}</span>
+                    <span>-{formatPrice(order.discount, adminSettings.currencySymbol)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-stone-300 print:text-gray-700">
                   <span>Insured Shipping:</span>
-                  <span>{order.shipping === 0 ? 'FREE' : `$${order.shipping.toFixed(2)}`}</span>
+                  <span>{order.shipping === 0 ? 'FREE' : formatPrice(order.shipping, adminSettings.currencySymbol)}</span>
                 </div>
                 <div className="flex justify-between text-stone-300 print:text-gray-700">
                   <span>Excise & Sales Tax:</span>
-                  <span>${order.tax.toFixed(2)}</span>
+                  <span>{formatPrice(order.tax, adminSettings.currencySymbol)}</span>
                 </div>
                 <div className="border-t border-stone-700 print:border-gray-400 pt-2 flex justify-between text-base font-bold text-stone-100 print:text-black">
                   <span>Total Paid:</span>
-                  <span className="text-amber-400 print:text-black">${order.total.toFixed(2)}</span>
+                  <span className="text-amber-400 print:text-black">{formatPrice(order.total, adminSettings.currencySymbol)}</span>
                 </div>
               </div>
             </div>

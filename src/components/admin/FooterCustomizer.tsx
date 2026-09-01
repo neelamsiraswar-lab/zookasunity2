@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useStore, AppTab } from '../../context/StoreContext';
+import React, { useState, useEffect } from 'react';
+import { useStore, AppTab, normalizeFooterConfig } from '../../context/StoreContext';
 import { FooterCustomizationConfig, FooterColumn, FooterLink } from '../../types';
 import { initialFooterConfig } from '../../data/initialData';
 import { 
@@ -12,6 +12,9 @@ import {
   Save, 
   RotateCcw, 
   Eye, 
+  EyeOff,
+  ArrowUp,
+  ArrowDown,
   Check, 
   Sliders, 
   Layers, 
@@ -32,17 +35,24 @@ import {
 const AVAILABLE_TABS: { value: AppTab; label: string }[] = [
   { value: 'home', label: 'Home Page' },
   { value: 'products', label: 'Spirits Store Catalog' },
+  { value: 'allocations', label: 'Rare Allocations & Ballots' },
   { value: 'about', label: 'Our Story & Distillery' },
   { value: 'blog', label: 'Tasting Journal & Mixology' },
   { value: 'account', label: 'Customer Account / Vault' },
-  { value: 'cart', label: 'Shopping Cart Checkout' },
+  { value: 'checkout', label: 'Checkout & Orders' },
   { value: 'admin', label: 'Admin CMS Management' }
 ];
 
 export const FooterCustomizer: React.FC = () => {
   const { footerConfig, updateFooterConfig, adminSettings, aboutContent } = useStore();
-  const [formData, setFormData] = useState<FooterCustomizationConfig>(footerConfig || initialFooterConfig);
+  const [formData, setFormData] = useState<FooterCustomizationConfig>(() => normalizeFooterConfig(footerConfig || initialFooterConfig));
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (footerConfig) {
+      setFormData(normalizeFooterConfig(footerConfig));
+    }
+  }, [footerConfig]);
 
   const handleSave = () => {
     updateFooterConfig(formData);
@@ -52,8 +62,9 @@ export const FooterCustomizer: React.FC = () => {
 
   const handleReset = () => {
     if (confirm('Reset footer & newsletter configurations to distillery factory defaults?')) {
-      setFormData(initialFooterConfig);
-      updateFooterConfig(initialFooterConfig);
+      const normalized = normalizeFooterConfig(initialFooterConfig);
+      setFormData(normalized);
+      updateFooterConfig(normalized);
       setSaveStatus('Reset to default footer configuration.');
       setTimeout(() => setSaveStatus(null), 3000);
     }
@@ -64,27 +75,59 @@ export const FooterCustomizer: React.FC = () => {
     const newCol: FooterColumn = {
       id: `col-${Date.now()}`,
       title: 'New Column',
+      visible: true,
       links: [
         { id: `link-${Date.now()}-1`, label: 'Custom Spirits Link', tab: 'products' }
       ]
     };
     setFormData(prev => ({
       ...prev,
-      columns: [...prev.columns, newCol]
+      columns: [...(prev.columns || []), newCol]
     }));
+  };
+
+  const toggleColumnVisibility = (colIndex: number) => {
+    setFormData(prev => {
+      const nextCols = [...(prev.columns || [])];
+      if (nextCols[colIndex]) {
+        const currentVis = nextCols[colIndex].visible !== false;
+        nextCols[colIndex] = {
+          ...nextCols[colIndex],
+          visible: !currentVis
+        };
+      }
+      return { ...prev, columns: nextCols };
+    });
+  };
+
+  const moveColumn = (index: number, direction: 'up' | 'down') => {
+    const cols = formData.columns || [];
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === cols.length - 1)) {
+      return;
+    }
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    setFormData(prev => {
+      const nextCols = [...(prev.columns || [])];
+      const temp = nextCols[index];
+      nextCols[index] = nextCols[targetIndex];
+      nextCols[targetIndex] = temp;
+      return { ...prev, columns: nextCols };
+    });
   };
 
   const removeColumn = (colIndex: number) => {
     setFormData(prev => ({
       ...prev,
-      columns: prev.columns.filter((_, i) => i !== colIndex)
+      columns: (prev.columns || []).filter((_, i) => i !== colIndex)
     }));
   };
 
   const updateColumnTitle = (colIndex: number, title: string) => {
     setFormData(prev => {
-      const nextCols = [...prev.columns];
-      nextCols[colIndex] = { ...nextCols[colIndex], title };
+      const nextCols = [...(prev.columns || [])];
+      if (nextCols[colIndex]) {
+        nextCols[colIndex] = { ...nextCols[colIndex], title };
+      }
       return { ...prev, columns: nextCols };
     });
   };
@@ -96,32 +139,40 @@ export const FooterCustomizer: React.FC = () => {
       tab: 'products'
     };
     setFormData(prev => {
-      const nextCols = [...prev.columns];
-      nextCols[colIndex] = {
-        ...nextCols[colIndex],
-        links: [...nextCols[colIndex].links, newLink]
-      };
+      const nextCols = [...(prev.columns || [])];
+      if (nextCols[colIndex]) {
+        nextCols[colIndex] = {
+          ...nextCols[colIndex],
+          links: [...(nextCols[colIndex].links || []), newLink]
+        };
+      }
       return { ...prev, columns: nextCols };
     });
   };
 
   const updateLinkInColumn = (colIndex: number, linkIndex: number, updates: Partial<FooterLink>) => {
     setFormData(prev => {
-      const nextCols = [...prev.columns];
-      const nextLinks = [...nextCols[colIndex].links];
-      nextLinks[linkIndex] = { ...nextLinks[linkIndex], ...updates };
-      nextCols[colIndex] = { ...nextCols[colIndex], links: nextLinks };
+      const nextCols = [...(prev.columns || [])];
+      if (nextCols[colIndex]) {
+        const nextLinks = [...(nextCols[colIndex].links || [])];
+        if (nextLinks[linkIndex]) {
+          nextLinks[linkIndex] = { ...nextLinks[linkIndex], ...updates };
+          nextCols[colIndex] = { ...nextCols[colIndex], links: nextLinks };
+        }
+      }
       return { ...prev, columns: nextCols };
     });
   };
 
   const removeLinkFromColumn = (colIndex: number, linkIndex: number) => {
     setFormData(prev => {
-      const nextCols = [...prev.columns];
-      nextCols[colIndex] = {
-        ...nextCols[colIndex],
-        links: nextCols[colIndex].links.filter((_, i) => i !== linkIndex)
-      };
+      const nextCols = [...(prev.columns || [])];
+      if (nextCols[colIndex]) {
+        nextCols[colIndex] = {
+          ...nextCols[colIndex],
+          links: (nextCols[colIndex].links || []).filter((_, i) => i !== linkIndex)
+        };
+      }
       return { ...prev, columns: nextCols };
     });
   };
@@ -153,7 +204,9 @@ export const FooterCustomizer: React.FC = () => {
   const updateSocialLink = (index: number, updates: { url?: string; visible?: boolean }) => {
     setFormData(prev => {
       const nextSocial = [...(prev.socialLinks || [])];
-      nextSocial[index] = { ...nextSocial[index], ...updates };
+      if (nextSocial[index]) {
+        nextSocial[index] = { ...nextSocial[index], ...updates };
+      }
       return { ...prev, socialLinks: nextSocial };
     });
   };
@@ -255,11 +308,11 @@ export const FooterCustomizer: React.FC = () => {
               </p>
             </div>
 
-            {formData.columns.map((col) => (
+            {(formData.columns || []).filter(col => col.visible !== false).map((col) => (
               <div key={col.id} className="space-y-1.5">
                 <h5 className="font-serif font-bold text-stone-200 text-xs uppercase tracking-wider">{col.title}</h5>
                 <ul className="space-y-1 text-[11px] text-stone-400">
-                  {col.links.map(l => (
+                  {(col.links || []).map(l => (
                     <li key={l.id} className="hover:text-amber-400">
                       {l.label}
                     </li>
@@ -267,6 +320,12 @@ export const FooterCustomizer: React.FC = () => {
                 </ul>
               </div>
             ))}
+
+            {(formData.columns || []).filter(col => col.visible !== false).length === 0 && (
+              <div className="md:col-span-2 p-4 bg-stone-900/60 border border-dashed border-stone-800 rounded-xl text-center text-xs text-stone-500 italic">
+                All navigation columns are currently disabled/hidden.
+              </div>
+            )}
 
             {formData.showContactInfo && (
               <div className="space-y-1.5">
@@ -458,7 +517,7 @@ export const FooterCustomizer: React.FC = () => {
               <div>
                 <h3 className="text-sm font-serif font-bold text-stone-100 uppercase tracking-wider flex items-center gap-2">
                   <Layers className="w-4 h-4 text-amber-400" />
-                  <span>Navigation Columns ({formData.columns.length})</span>
+                  <span>Navigation Columns ({(formData.columns || []).length})</span>
                 </h3>
                 <p className="text-xs text-stone-400 mt-0.5">
                   Organize links under custom column categories.
@@ -476,83 +535,165 @@ export const FooterCustomizer: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {formData.columns.map((col, colIndex) => (
-                <div key={col.id} className="p-4 bg-stone-950 border border-stone-800 rounded-xl space-y-3">
-                  <div className="flex items-center justify-between gap-2 border-b border-stone-800/80 pb-2">
-                    <div className="flex-1">
+              {(formData.columns || []).map((col, colIndex) => {
+                const isVisible = col.visible !== false;
+                return (
+                  <div 
+                    key={col.id} 
+                    className={`p-4 bg-stone-950 border rounded-xl space-y-3 transition ${
+                      isVisible 
+                        ? 'border-stone-800' 
+                        : 'border-stone-800/60 bg-stone-950/60 opacity-85 border-dashed'
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-800/80 pb-3">
+                      <div className="flex items-center gap-2">
+                        {/* Reorder Buttons */}
+                        <div className="flex items-center bg-stone-900 border border-stone-800 rounded-lg p-0.5">
+                          <button
+                            type="button"
+                            onClick={() => moveColumn(colIndex, 'up')}
+                            disabled={colIndex === 0}
+                            className="p-1 text-stone-400 hover:text-amber-400 disabled:opacity-30 disabled:hover:text-stone-400 transition"
+                            title="Move column left/up"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveColumn(colIndex, 'down')}
+                            disabled={colIndex === (formData.columns || []).length - 1}
+                            className="p-1 text-stone-400 hover:text-amber-400 disabled:opacity-30 disabled:hover:text-stone-400 transition"
+                            title="Move column right/down"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <span className="text-xs font-mono font-bold text-stone-400 bg-stone-900 px-2 py-0.5 rounded border border-stone-800">
+                          Col #{colIndex + 1}
+                        </span>
+
+                        {/* Visibility Status Badge */}
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          isVisible 
+                            ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-800/60' 
+                            : 'bg-stone-900 text-stone-400 border border-stone-800'
+                        }`}>
+                          {isVisible ? <Eye className="w-3 h-3 text-emerald-400" /> : <EyeOff className="w-3 h-3 text-stone-500" />}
+                          <span>{isVisible ? 'Visible on Store' : 'Disabled (Hidden)'}</span>
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {/* Enable/Disable Toggle Button */}
+                        <button
+                          type="button"
+                          onClick={() => toggleColumnVisibility(colIndex)}
+                          className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition cursor-pointer ${
+                            isVisible
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                              : 'bg-stone-800 text-stone-300 border-stone-700 hover:bg-stone-700'
+                          }`}
+                          title={isVisible ? 'Click to disable column' : 'Click to enable column'}
+                        >
+                          {isVisible ? (
+                            <>
+                              <Eye className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Enabled</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5 text-stone-400" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+
+                        {/* Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => removeColumn(colIndex)}
+                          title="Delete Column"
+                          className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-950/40 rounded-lg transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {!isVisible && (
+                      <div className="p-2 bg-stone-900/60 rounded-lg border border-stone-800/80 text-[11px] text-stone-400 flex items-center gap-2">
+                        <EyeOff className="w-3.5 h-3.5 text-stone-500 shrink-0" />
+                        <span>This entire column is <strong>disabled</strong> and will not be displayed on the storefront footer.</span>
+                      </div>
+                    )}
+
+                    <div>
                       <label className="block text-[10px] font-bold text-stone-400 uppercase mb-1">Column Title</label>
                       <input
                         type="text"
                         value={col.title}
                         onChange={(e) => updateColumnTitle(colIndex, e.target.value)}
-                        className="w-full px-3 py-1.5 bg-stone-900 border border-stone-700 rounded-lg text-xs font-bold text-amber-400"
+                        className="w-full px-3 py-1.5 bg-stone-900 border border-stone-700 rounded-lg text-xs font-bold text-amber-400 focus:border-amber-500 focus:outline-none"
                         placeholder="Column Heading"
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeColumn(colIndex)}
-                      title="Delete Column"
-                      className="p-1.5 text-red-400 hover:text-red-300 mt-4"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Links in Column */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[11px] text-stone-400 font-semibold">
-                      <span>Column Links ({col.links.length})</span>
-                      <button
-                        type="button"
-                        onClick={() => addLinkToColumn(colIndex)}
-                        className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1"
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span>Add Link</span>
-                      </button>
-                    </div>
-
-                    {col.links.map((link, linkIndex) => (
-                      <div key={link.id} className="p-2 bg-stone-900/90 rounded-lg border border-stone-800 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                        <div className="sm:col-span-5">
-                          <input
-                            type="text"
-                            value={link.label}
-                            onChange={(e) => updateLinkInColumn(colIndex, linkIndex, { label: e.target.value })}
-                            className="w-full px-2.5 py-1 bg-stone-950 border border-stone-700 rounded text-xs text-stone-200"
-                            placeholder="Link Title"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-5">
-                          <select
-                            value={link.tab || 'products'}
-                            onChange={(e) => updateLinkInColumn(colIndex, linkIndex, { tab: e.target.value as AppTab })}
-                            className="w-full px-2.5 py-1 bg-stone-950 border border-stone-700 rounded text-xs text-stone-200"
-                          >
-                            {AVAILABLE_TABS.map((t) => (
-                              <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="sm:col-span-2 flex items-center justify-end">
-                          <button
-                            type="button"
-                            onClick={() => removeLinkFromColumn(colIndex, linkIndex)}
-                            className="p-1 text-red-400 hover:text-red-300"
-                            title="Remove Link"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                    {/* Links in Column */}
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center justify-between text-[11px] text-stone-400 font-semibold">
+                        <span>Column Links ({(col.links || []).length})</span>
+                        <button
+                          type="button"
+                          onClick={() => addLinkToColumn(colIndex)}
+                          className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1 cursor-pointer text-xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Add Link</span>
+                        </button>
                       </div>
-                    ))}
+
+                      {(col.links || []).map((link, linkIndex) => (
+                        <div key={link.id} className="p-2 bg-stone-900/90 rounded-lg border border-stone-800 grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                          <div className="sm:col-span-5">
+                            <input
+                              type="text"
+                              value={link.label}
+                              onChange={(e) => updateLinkInColumn(colIndex, linkIndex, { label: e.target.value })}
+                              className="w-full px-2.5 py-1 bg-stone-950 border border-stone-700 rounded text-xs text-stone-200 focus:border-amber-500 focus:outline-none"
+                              placeholder="Link Title"
+                            />
+                          </div>
+
+                          <div className="sm:col-span-5">
+                            <select
+                              value={link.tab || 'products'}
+                              onChange={(e) => updateLinkInColumn(colIndex, linkIndex, { tab: e.target.value as AppTab })}
+                              className="w-full px-2.5 py-1 bg-stone-950 border border-stone-700 rounded text-xs text-stone-200 focus:border-amber-500 focus:outline-none"
+                            >
+                              {AVAILABLE_TABS.map((t) => (
+                                <option key={t.value} value={t.value}>{t.label}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="sm:col-span-2 flex items-center justify-end">
+                            <button
+                              type="button"
+                              onClick={() => removeLinkFromColumn(colIndex, linkIndex)}
+                              className="p-1 text-red-400 hover:text-red-300 cursor-pointer"
+                              title="Remove Link"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

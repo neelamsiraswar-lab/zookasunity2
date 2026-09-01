@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStore, AppTab } from '../context/StoreContext';
+import { useStore, AppTab, normalizeFooterConfig } from '../context/StoreContext';
 import { 
   Flame, 
   ShieldCheck, 
@@ -34,57 +34,7 @@ export const Footer: React.FC = () => {
   const [newsletterEmail, setNewsletterEmail] = useState<string>('');
   const [subscribed, setSubscribed] = useState<boolean>(false);
 
-  const effectiveFooter = footerConfig || {
-    brandName: adminSettings.brandName,
-    brandDescription: 'Artisanal small-batch single malt whiskies, cask-strength bourbons, alpine gins, and aged rums crafted with unhurried devotion to copper pot distillation.',
-    showNewsletter: true,
-    newsletterHeading: 'Receive First-Access to Limited Single Cask Allocations',
-    newsletterSubheading: 'Join our private membership ledger to receive advance tasting notes, invitations to master distiller classes, and instant 10% off your inaugural order.',
-    newsletterButtonText: 'Subscribe 10% Off',
-    newsletterPromoCode: 'UNITY10',
-    newsletterDiscountText: '10% off your inaugural order',
-    columns: [
-      {
-        id: 'col-1',
-        title: 'Spirits Vault',
-        links: [
-          { id: 'link-1', label: 'Single Malt Whiskies', tab: 'products' },
-          { id: 'link-2', label: 'Cask Strength Bourbons', tab: 'products' },
-          { id: 'link-3', label: 'Botanical Vapour Gins', tab: 'products' },
-          { id: 'link-4', label: 'French Cognac Finish Rums', tab: 'products' },
-          { id: 'link-5', label: 'Rare Vintage Reserves (25-Yr)', tab: 'products' }
-        ]
-      },
-      {
-        id: 'col-2',
-        title: 'Distillery & Lore',
-        links: [
-          { id: 'link-6', label: 'Copper Pot Alchemy', tab: 'about' },
-          { id: 'link-7', label: 'Meet the Master Distillers', tab: 'about' },
-          { id: 'link-8', label: 'Tasting Notes & Mixology', tab: 'blog' },
-          { id: 'link-9', label: 'Unity Cask Club Rewards', tab: 'account' },
-          { id: 'link-10', label: 'Distillery Admin Portal', tab: 'admin', isExternal: false }
-        ]
-      }
-    ],
-    showContactInfo: true,
-    contactAddress: aboutContent.distilleryAddress || '1788 High Glen Road, Speyside Valley, Highlands AB38 9RX',
-    contactHours: aboutContent.distilleryHours || 'Tasting Room: Wed-Sun 11:00 AM – 8:00 PM EST',
-    contactPhone: adminSettings.contactPhone || '+1 (800) 555-UNITY',
-    contactEmail: adminSettings.contactEmail || 'vault@zookasunityspirits.com',
-    showComplianceBadges: true,
-    complianceBadges: [
-      '21+ Legal Compliance',
-      '256-Bit SSL Encrypted'
-    ],
-    copyrightText: `© ${new Date().getFullYear()} ${adminSettings.brandName}. All Rights Reserved. Please enjoy our spirits responsibly. Adult signature required upon delivery.`,
-    socialLinks: [
-      { platform: 'Instagram', url: 'https://instagram.com', iconName: 'Instagram', visible: true },
-      { platform: 'Facebook', url: 'https://facebook.com', iconName: 'Facebook', visible: true },
-      { platform: 'Twitter', url: 'https://twitter.com', iconName: 'Twitter', visible: true },
-      { platform: 'YouTube', url: 'https://youtube.com', iconName: 'Youtube', visible: true }
-    ]
-  };
+  const effectiveFooter = normalizeFooterConfig(footerConfig);
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +130,7 @@ export const Footer: React.FC = () => {
             {/* Compliance Badges */}
             {effectiveFooter.showComplianceBadges !== false && (effectiveFooter.complianceBadges || []).length > 0 && (
               <div className="flex flex-wrap items-center gap-2 pt-2">
-                {effectiveFooter.complianceBadges.map((badge, idx) => (
+                {(effectiveFooter.complianceBadges || []).map((badge, idx) => (
                   <span key={idx} className="flex items-center gap-1.5 text-xs text-stone-400 bg-stone-900 px-3 py-1.5 rounded-lg border border-stone-800">
                     <ShieldCheck className="w-4 h-4 text-amber-500" />
                     <span>{badge}</span>
@@ -192,7 +142,7 @@ export const Footer: React.FC = () => {
             {/* Social Icons */}
             {(effectiveFooter.socialLinks || []).filter(s => s.visible !== false).length > 0 && (
               <div className="flex items-center gap-2 pt-2">
-                {effectiveFooter.socialLinks.filter(s => s.visible !== false).map((social, idx) => {
+                {(effectiveFooter.socialLinks || []).filter(s => s.visible !== false).map((social, idx) => {
                   const SIcon = getSocialIcon(social.iconName, social.platform);
                   return (
                     <a
@@ -212,7 +162,7 @@ export const Footer: React.FC = () => {
           </div>
 
           {/* Dynamic Navigation Columns */}
-          {(effectiveFooter.columns || []).map((col) => (
+          {(effectiveFooter.columns || []).filter(col => col.visible !== false).map((col) => (
             <div key={col.id || col.title}>
               <h4 className="font-serif text-sm font-semibold uppercase tracking-wider text-stone-200 mb-4">
                 {col.title}

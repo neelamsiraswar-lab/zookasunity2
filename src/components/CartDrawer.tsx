@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { formatPrice } from '../utils/currency';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -95,7 +96,7 @@ export const CartDrawer: React.FC = () => {
                     <strong className="text-emerald-400">Complimentary Insured Shipping Unlocked!</strong>
                   ) : (
                     <span>
-                      Add <strong className="text-amber-400">${freeShippingNeeded.toFixed(2)}</strong> for free shipping
+                      Add <strong className="text-amber-400">{formatPrice(freeShippingNeeded, adminSettings.currencySymbol)}</strong> for free shipping
                     </span>
                   )}
                 </span>
@@ -148,7 +149,7 @@ export const CartDrawer: React.FC = () => {
                           />
                           <div className="flex-1 px-3 min-w-0">
                             <h5 className="text-xs font-semibold text-stone-200 truncate">{p.name}</h5>
-                            <span className="text-[11px] text-amber-400 font-bold">${p.salePrice ?? p.price}</span>
+                            <span className="text-[11px] text-amber-400 font-bold">{formatPrice(p.salePrice ?? p.price, adminSettings.currencySymbol)}</span>
                           </div>
                           <button
                             onClick={() => addToCart(p, 1)}
@@ -200,10 +201,10 @@ export const CartDrawer: React.FC = () => {
                           {/* Price & Quantity Controls */}
                           <div className="flex items-center justify-between mt-3">
                             <div className="text-xs font-bold text-amber-400">
-                              ${(unitPrice * item.quantity).toFixed(2)}
+                              {formatPrice(unitPrice * item.quantity, adminSettings.currencySymbol)}
                               {item.quantity > 1 && (
                                 <span className="text-[10px] text-stone-500 font-normal ml-1">
-                                  (${unitPrice}/btl)
+                                  ({formatPrice(unitPrice, adminSettings.currencySymbol)}/btl)
                                 </span>
                               )}
                             </div>
@@ -249,7 +250,7 @@ export const CartDrawer: React.FC = () => {
                           />
                           <span className="flex items-center gap-1">
                             <Gift className="w-3.5 h-3.5 text-amber-400" />
-                            Timber Gift Box (+$15)
+                            Timber Gift Box (+{formatPrice(1200, adminSettings.currencySymbol)})
                           </span>
                         </label>
                         {item.giftBox && (
@@ -268,12 +269,12 @@ export const CartDrawer: React.FC = () => {
                 <div className="space-y-1.5 text-xs text-stone-400">
                   <div className="flex justify-between">
                     <span>Spirits Subtotal</span>
-                    <span className="text-stone-200 font-medium">${cartSubtotal.toFixed(2)}</span>
+                    <span className="text-stone-200 font-medium">{formatPrice(cartSubtotal, adminSettings.currencySymbol)}</span>
                   </div>
                   {cartGiftBoxTotal > 0 && (
                     <div className="flex justify-between">
                       <span>Artisanal Gift Packaging</span>
-                      <span className="text-stone-200 font-medium">+${cartGiftBoxTotal.toFixed(2)}</span>
+                      <span className="text-stone-200 font-medium">+{formatPrice(cartGiftBoxTotal, adminSettings.currencySymbol)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
@@ -282,17 +283,17 @@ export const CartDrawer: React.FC = () => {
                       {cartShippingFee === 0 ? (
                         <strong className="text-emerald-400 uppercase text-[10px]">FREE</strong>
                       ) : (
-                        `$${cartShippingFee.toFixed(2)}`
+                        formatPrice(cartShippingFee, adminSettings.currencySymbol)
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Estimated Spirits Tax ({adminSettings.taxRatePercent}%)</span>
-                    <span className="text-stone-200 font-medium">${cartTaxAmount.toFixed(2)}</span>
+                    <span className="text-stone-200 font-medium">{formatPrice(cartTaxAmount, adminSettings.currencySymbol)}</span>
                   </div>
                   <div className="pt-2 border-t border-stone-800 flex justify-between text-base font-bold text-stone-100">
                     <span>Estimated Total</span>
-                    <span className="text-amber-400">${cartTotal.toFixed(2)}</span>
+                    <span className="text-amber-400">{formatPrice(cartTotal, adminSettings.currencySymbol)}</span>
                   </div>
                 </div>
 
@@ -326,3 +327,4 @@ export const CartDrawer: React.FC = () => {
     </AnimatePresence>
   );
 };
+
