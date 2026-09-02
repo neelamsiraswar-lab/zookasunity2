@@ -247,17 +247,6 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ onGoToComp
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
-                  onClick={() => handleFieldChange('logoType', 'both')}
-                  className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
-                    formData.logoType === 'both'
-                      ? 'bg-amber-600/20 text-amber-300 border-amber-500/50 shadow'
-                      : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-stone-200'
-                  }`}
-                >
-                  Both (Logo & Crest)
-                </button>
-                <button
-                  type="button"
                   onClick={() => handleFieldChange('logoType', 'custom_image')}
                   className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
                     formData.logoType === 'custom_image'
@@ -266,6 +255,17 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ onGoToComp
                   }`}
                 >
                   Custom Image Only
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleFieldChange('logoType', 'both')}
+                  className={`py-2 px-3 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer ${
+                    formData.logoType === 'both'
+                      ? 'bg-amber-600/20 text-amber-300 border-amber-500/50 shadow'
+                      : 'bg-stone-950 text-stone-400 border-stone-800 hover:text-stone-200'
+                  }`}
+                >
+                  Both (Logo & Crest)
                 </button>
                 <button
                   type="button"
@@ -318,40 +318,46 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ onGoToComp
             </div>
 
             {/* Cloud Image Uploader */}
-            {formData.logoType !== 'distillery_crest' && (
-              <div className="space-y-3 pt-2">
-                <CloudImageUploader
-                  label="Upload Company Logo (PNG / SVG / JPG with transparency recommended)"
-                  currentImageUrl={formData.logoUrl || ''}
-                  onImageUploaded={url => handleFieldChange('logoUrl', url)}
-                  folder="products"
-                  presetOptions={presetLogos}
-                  helperText="Upload your official high-res brand logo. Stored securely and rendered on all printouts."
-                />
+            <div className="space-y-3 pt-2">
+              <CloudImageUploader
+                label="Upload Local Company Logo (PNG / SVG / JPG / WebP)"
+                currentImageUrl={formData.logoUrl || ''}
+                onImageUploaded={url => {
+                  handleFieldChange('logoUrl', url);
+                  if (formData.logoType === 'distillery_crest') {
+                    handleFieldChange('logoType', 'custom_image');
+                  }
+                }}
+                onClear={() => {
+                  handleFieldChange('logoUrl', '');
+                }}
+                folder="products"
+                presetOptions={presetLogos}
+                helperText="Upload your official high-res brand logo from your device. Synchronized with letterhead header."
+              />
 
-                {/* Logo Width Slider */}
-                <div className="bg-stone-950 p-3.5 rounded-lg border border-stone-800">
-                  <div className="flex items-center justify-between text-xs mb-1.5">
-                    <span className="text-stone-300 font-medium">Header Logo Width:</span>
-                    <span className="text-amber-400 font-mono font-bold">{formData.logoWidth || 120}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="60"
-                    max="260"
-                    step="5"
-                    value={formData.logoWidth || 120}
-                    onChange={e => handleFieldChange('logoWidth', Number(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-stone-600 mt-1 font-mono">
-                    <span>60px (Compact)</span>
-                    <span>120px (Standard)</span>
-                    <span>260px (Prominent)</span>
-                  </div>
+              {/* Logo Width Slider */}
+              <div className="bg-stone-950 p-3.5 rounded-lg border border-stone-800">
+                <div className="flex items-center justify-between text-xs mb-1.5">
+                  <span className="text-stone-300 font-medium">Header Logo Width:</span>
+                  <span className="text-amber-400 font-mono font-bold">{formData.logoWidth || 120}px</span>
+                </div>
+                <input
+                  type="range"
+                  min="60"
+                  max="260"
+                  step="5"
+                  value={formData.logoWidth || 120}
+                  onChange={e => handleFieldChange('logoWidth', Number(e.target.value))}
+                  className="w-full accent-amber-500 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-stone-600 mt-1 font-mono">
+                  <span>60px (Compact)</span>
+                  <span>120px (Standard)</span>
+                  <span>260px (Prominent)</span>
                 </div>
               </div>
-            )}
+            </div>
           </div>
 
           {/* Section 3: Statutory Registration (CIN, GSTIN, PAN, Excise) */}

@@ -1403,15 +1403,18 @@ export const LetterheadManager: React.FC = () => {
                   {/* Header Row: Crest on Left, Centered Company Details */}
                   <header className="mb-2 relative z-10">
                     <div className="flex flex-row items-center gap-4 text-left">
-                      {/* Left Crest Logo */}
-                      <div className="shrink-0 flex items-center justify-center">
-                        {((companyDetails?.logoType === 'custom_image' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
+                      {/* Left Crest / Custom Logo */}
+                      <div className="shrink-0 flex items-center justify-center gap-2">
+                        {companyDetails?.logoType === 'both' && (
+                          <ZookasOfficialCrest size={64} variant="gold" showText={false} />
+                        )}
+                        {((companyDetails?.logoType === 'custom_image' || companyDetails?.logoType === 'both' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
                           <img
                             src={companyDetails.logoUrl}
                             alt="Company Logo"
                             referrerPolicy="no-referrer"
                             className="object-contain max-h-20 sm:max-h-24"
-                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 130)}px` }}
+                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 150)}px` }}
                           />
                         ) : (
                           <ZookasOfficialCrest size={82} variant="gold" showText={true} />
@@ -1944,15 +1947,18 @@ export const LetterheadManager: React.FC = () => {
                   {/* Header Row: Crest on Left, Centered Company Details */}
                   <header className="mb-2 relative z-10">
                     <div className="flex flex-row items-center gap-4 text-left">
-                      {/* Left Crest Logo */}
-                      <div className="shrink-0 flex items-center justify-center">
-                        {((companyDetails?.logoType === 'custom_image' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
+                      {/* Left Crest / Custom Logo */}
+                      <div className="shrink-0 flex items-center justify-center gap-2">
+                        {companyDetails?.logoType === 'both' && (
+                          <ZookasOfficialCrest size={70} variant="gold" showText={false} />
+                        )}
+                        {((companyDetails?.logoType === 'custom_image' || companyDetails?.logoType === 'both' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
                           <img
                             src={companyDetails.logoUrl}
                             alt="Company Logo"
                             referrerPolicy="no-referrer"
                             className="object-contain max-h-24"
-                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 140)}px` }}
+                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 150)}px` }}
                           />
                         ) : (
                           <ZookasOfficialCrest size={90} variant="gold" showText={true} />

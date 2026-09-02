@@ -160,38 +160,127 @@ export const COLLECTIONS = {
   LETTERHEAD_DOCUMENTS: 'letterhead_documents'
 } as const;
 
+// Helper: Client-side Image Optimization (Downsamples high-res local uploads to prevent Firestore document overflow and improve upload speeds)
+export const optimizeImageFile = async (
+  file: File,
+  maxDimension = 900,
+  quality = 0.88
+): Promise<{ file: File | Blob; dataUrl: string }> => {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve({ file, dataUrl: '' });
+      return;
+    }
+
+    // Pass SVG directly
+    if (file.type === 'image/svg+xml') {
+      const reader = new FileReader();
+      reader.onload = () => resolve({ file, dataUrl: (reader.result as string) || '' });
+      reader.onerror = () => resolve({ file, dataUrl: '' });
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const isPng = file.type === 'image/png';
+          const outputType = isPng ? 'image/png' : 'image/jpeg';
+          const dataUrl = canvas.toDataURL(outputType, quality);
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const optimizedFile = new File([blob], file.name, { type: outputType });
+                resolve({ file: optimizedFile, dataUrl });
+              } else {
+                resolve({ file, dataUrl });
+              }
+            },
+            outputType,
+            quality
+          );
+        } else {
+          resolve({ file, dataUrl: (e.target?.result as string) || '' });
+        }
+      };
+      img.onerror = () => {
+        resolve({ file, dataUrl: (e.target?.result as string) || '' });
+      };
+      img.src = (e.target?.result as string) || '';
+    };
+    reader.onerror = () => resolve({ file, dataUrl: '' });
+    reader.readAsDataURL(file);
+  });
+};
+
 // Storage helper: Upload Image (File or Data URL) to Cloud Storage with fallback
 export const uploadImageToCloudStorage = async (
   fileOrBase64: File | string,
   pathFolder: 'products' | 'carousel' | 'heritage' | 'blog' | 'casks' = 'products'
 ): Promise<string> => {
+  let targetToUpload: File | Blob | string = fileOrBase64;
+  let fallbackDataUrl = '';
+
+  if (typeof fileOrBase64 !== 'string') {
+    try {
+      const optimized = await optimizeImageFile(fileOrBase64);
+      targetToUpload = optimized.file;
+      fallbackDataUrl = optimized.dataUrl;
+    } catch {
+      // Fallback gracefully
+    }
+  }
+
   try {
     const filename = `${pathFolder}/${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const storageRef = ref(storage, filename);
 
-    if (typeof fileOrBase64 === 'string') {
-      if (fileOrBase64.startsWith('data:')) {
-        await uploadString(storageRef, fileOrBase64, 'data_url');
+    if (typeof targetToUpload === 'string') {
+      if (targetToUpload.startsWith('data:')) {
+        await uploadString(storageRef, targetToUpload, 'data_url');
         const downloadUrl = await getDownloadURL(storageRef);
         return downloadUrl;
       }
-      return fileOrBase64; // Already a URL
+      return targetToUpload; // Already an external or hosted URL
     } else {
-      await uploadBytes(storageRef, fileOrBase64);
+      await uploadBytes(storageRef, targetToUpload);
       const downloadUrl = await getDownloadURL(storageRef);
       return downloadUrl;
     }
   } catch (err) {
     console.warn('Cloud Storage upload note (falling back to direct optimized URL/dataURI):', err);
-    if (typeof fileOrBase64 === 'string') {
-      return fileOrBase64;
+    if (typeof targetToUpload === 'string') {
+      return targetToUpload;
+    }
+    if (fallbackDataUrl) {
+      return fallbackDataUrl;
     }
     // Fallback: convert file to Base64
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => resolve((reader.result as string) || '');
       reader.onerror = reject;
-      reader.readAsDataURL(fileOrBase64);
+      reader.readAsDataURL(fileOrBase64 as File);
     });
   }
 };
