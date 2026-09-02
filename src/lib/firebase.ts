@@ -36,7 +36,8 @@ import {
   BallotAllocation,
   BallotEntry,
   LetterheadTemplate,
-  LetterheadDocument
+  LetterheadDocument,
+  CompanyDetails
 } from '../types';
 
 // Silence internal Firestore connection logs and transient retry warnings
@@ -346,7 +347,7 @@ export const subscribeToCloudBlogPosts = (callback: (posts: BlogPost[]) => void)
 };
 
 // --- SITE CONTENT (Home, About, Settings, Header, Footer, Bottom Navbar) ---
-export const saveCloudSiteContent = async (key: 'home' | 'about' | 'settings' | 'header' | 'footer' | 'bottom_navbar', data: any): Promise<void> => {
+export const saveCloudSiteContent = async (key: 'home' | 'about' | 'settings' | 'header' | 'footer' | 'bottom_navbar' | 'company_details', data: any): Promise<void> => {
   try {
     const docRef = doc(db, COLLECTIONS.SITE_CONTENT, key);
     await setDoc(docRef, { data, updatedAt: new Date().toISOString() }, { merge: true });
@@ -363,6 +364,7 @@ export const subscribeToCloudSiteContent = (
     header?: HeaderCustomizationConfig; 
     footer?: FooterCustomizationConfig;
     bottomNavbar?: BottomNavbarCustomizationConfig;
+    companyDetails?: CompanyDetails;
   }) => void
 ): Unsubscribe => {
   const q = query(collection(db, COLLECTIONS.SITE_CONTENT));
@@ -374,6 +376,7 @@ export const subscribeToCloudSiteContent = (
       header?: HeaderCustomizationConfig; 
       footer?: FooterCustomizationConfig;
       bottomNavbar?: BottomNavbarCustomizationConfig;
+      companyDetails?: CompanyDetails;
     } = {};
     snapshot.forEach(docSnap => {
       const id = docSnap.id;
@@ -384,6 +387,7 @@ export const subscribeToCloudSiteContent = (
       if (id === 'header') result.header = data;
       if (id === 'footer') result.footer = data;
       if (id === 'bottom_navbar') result.bottomNavbar = data;
+      if (id === 'company_details' || id === 'company') result.companyDetails = data;
     });
     callback(result);
   }, (err) => {

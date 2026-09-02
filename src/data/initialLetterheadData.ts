@@ -1,12 +1,81 @@
-import { LetterheadTemplate, LetterheadDocument } from '../types';
+import { LetterheadTemplate, LetterheadDocument, CompanyDetails } from '../types';
+
+export const initialCompanyDetails: CompanyDetails = {
+  companyName: "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED",
+  tradeName: "ZOOKAS UNITY BLENDERS & DISTILLERS",
+  tagline: "Premium Craft Blenders & Distillers",
+  logoUrl: "",
+  logoType: 'distillery_crest',
+  logoWidth: 100,
+  cin: "U73100WB2025PTC281568 / U46305WB2025PTC281568",
+  gstin: "19AACCZ7001P1ZU",
+  pan: "AACCZ7001P",
+  exciseLicense: "WB-EXCISE-DIST-2025-ZUK",
+  registeredAddress: "Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311",
+  distilleryAddress: "S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal 712311",
+  email: "zookasspirit123@gmail.com",
+  phone: "9593712358",
+  website: "www.zookasunityspirits.in",
+  supportPhone: "9593712358",
+  showCinOnLetterhead: true,
+  showGstOnLetterhead: true,
+  showPanOnLetterhead: false,
+  showExciseOnLetterhead: false,
+  showAddressOnLetterhead: true,
+  showContactOnLetterhead: true,
+  headerLogoLayout: 'left_aligned_row',
+  headerDetailsPosition: 'top_right',
+  footerNoticeText: "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED • Registered Office: Dankuni, Hooghly, WB 712311",
+  updatedAt: '2026-09-02T12:00:00Z'
+};
 
 export const initialLetterheadTemplates: LetterheadTemplate[] = [
+  {
+    id: 'tmpl-official-letterhead',
+    name: 'Official Corporate Letterhead (Official Layout)',
+    category: 'corporate',
+    description: 'Exact 1:1 replica of official corporate letterhead with GSTIN, gold heraldic crest, registered address, CIN, and amber geometric ribbon footer.',
+    isDefault: true,
+    paperStyle: 'clean_bond_white',
+    headerLayout: 'split_crest_left',
+    distilleryName: 'ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED',
+    tagline: 'Premium Craft Blenders & Distillers',
+    heritageYear: 'WB-2025',
+    crestIcon: 'Crown',
+    showRoyalWarrant: false,
+    royalWarrantText: '',
+    bondHouseRegistration: '',
+    taxExciseLicense: '19AACCZ7001P1ZU',
+    contactAddress: 'Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311',
+    contactPhone: '9593712358',
+    contactEmail: 'zookasspirit123@gmail.com',
+    contactWebsite: 'www.zookasunityspirits.in',
+    headerDivider: 'minimal_amber_line',
+    watermarkType: 'distillery_crest',
+    watermarkText: 'ZOOKAS',
+    watermarkOpacity: 0.05,
+    watermarkRotation: 0,
+    showWaxSeal: false,
+    waxSealText: '',
+    waxSealColor: 'antique_gold',
+    showSignatureBlock: true,
+    signatoryName: 'Authorized Signatory',
+    signatoryTitle: 'For ZOOKAS UNITY BLENDERS & DISTILLERS PVT. LTD.',
+    signatorySignatureFont: 'signature_1',
+    showCoSignatory: false,
+    showSecurityQrHash: false,
+    securityHashPrefix: 'ZUBD-AUTH-',
+    legalDisclaimer: 'This communication contains proprietary corporate information of Zookas Unity Blenders & Distillers Private Limited.',
+    accentColor: 'amber',
+    createdAt: '2026-09-02T09:00:00Z',
+    updatedAt: '2026-09-02T12:00:00Z'
+  },
   {
     id: 'tmpl-cask-cert',
     name: 'Certificate of Cask Origin & Authenticity',
     category: 'certificate',
     description: 'Official parchment certificate for single cask releases, barrel allocations, and authenticated vintage bottles.',
-    isDefault: true,
+    isDefault: false,
     paperStyle: 'vintage_parchment',
     headerLayout: 'centered_royal_crest',
     distilleryName: 'ZOOKAS UNITY SPIRITS',
@@ -246,6 +315,55 @@ export const initialLetterheadTemplates: LetterheadTemplate[] = [
 ];
 
 export const initialLetterheadDocuments: LetterheadDocument[] = [
+  {
+    id: 'doc-official-001',
+    title: 'Official Corporate Authorization & Allocation Notice',
+    templateId: 'tmpl-official-letterhead',
+    referenceNumber: 'ZUBD/2026/AUTH-0941',
+    documentDate: '2026-09-02',
+    recipientName: 'The Regional Excise Commissioner',
+    recipientTitle: 'Directorate of Commercial Taxes & Excise',
+    recipientCompany: 'Government of West Bengal',
+    recipientAddress: 'Excise Directorate, Dankuni District Office, Hooghly, West Bengal - 712311',
+    subject: 'Official Intimation Regarding Premium Blend Distillation & Bonded Batch Allocation',
+    status: 'finalized',
+    contentHtml: `
+<h2 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #111;">SUBJECT: OFFICIAL INTIMATION REGARDING DISTILLERY PRODUCTION & BONDED MOVEMENT</h2>
+
+<p style="margin-bottom: 12px; line-height: 1.6;">Respected Sir / Madam,</p>
+
+<p style="margin-bottom: 12px; line-height: 1.6;">This is to formally place on statutory record that <strong>ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED</strong> has completed the quality authentication and distillation batching under our certified premises located at <em>Floor No.: 1ST FLOOR Building, S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal - 712311</em>.</p>
+
+<p style="margin-bottom: 12px; line-height: 1.6;">All blending operations, excise record entries, and state duty compliances have been maintained under CIN No: <strong>U73100WB2025PTC281568 / U46305WB2025PTC281568</strong> and GSTIN: <strong>19AACCZ7001P1ZU</strong>.</p>
+
+<div style="margin: 16px 0; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; background-color: #f9fafb;">
+  <p style="font-weight: bold; margin-bottom: 6px; font-size: 13px;">Statutory Verification Summary:</p>
+  <ul style="margin: 0; padding-left: 18px; font-size: 12px; line-height: 1.6;">
+    <li><strong>Facility:</strong> S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly (PIN: 712311)</li>
+    <li><strong>GSTIN:</strong> 19AACCZ7001P1ZU</li>
+    <li><strong>Official Contact:</strong> 9593712358 | zookasspirit123@gmail.com | www.zookasunityspirits.in</li>
+    <li><strong>Status:</strong> Duly Authorized and Certified for Commercial Distribution</li>
+  </ul>
+</div>
+
+<p style="margin-bottom: 24px; line-height: 1.6;">We request you to kindly record the enclosed dispatch details in the excise registry.</p>
+
+<div style="margin-top: 32px; display: flex; justify-content: space-between; align-items: flex-end;">
+  <div>
+    <p style="margin: 0; font-size: 12px; color: #555;">Place: Dankuni, West Bengal</p>
+    <p style="margin: 0; font-size: 12px; color: #555;">Date: 02/09/2026</p>
+  </div>
+  <div style="text-align: right;">
+    <p style="margin: 0; font-weight: bold; font-size: 13px;">For ZOOKAS UNITY BLENDERS & DISTILLERS PVT. LTD.</p>
+    <div style="height: 40px;"></div>
+    <p style="margin: 0; font-weight: bold; font-size: 13px; text-decoration: underline;">Authorized Signatory</p>
+    <p style="margin: 0; font-size: 11px; color: #666;">Director / Authorized Representative</p>
+  </div>
+</div>
+`,
+    createdAt: '2026-09-02T10:00:00Z',
+    updatedAt: '2026-09-02T12:00:00Z'
+  },
   {
     id: 'doc-001',
     title: 'Certificate of Provenance - Cask 1974 Single Malt',

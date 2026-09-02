@@ -69,13 +69,21 @@ import {
   Feather,
   Flame,
   Wine,
-  Shield
+  Shield,
+  Building2,
+  Hash,
+  Globe,
+  Phone,
+  Mail
 } from 'lucide-react';
+import { CompanyDetailsTab } from './CompanyDetailsTab';
+import { ZookasOfficialCrest } from '../ZookasOfficialCrest';
 
 export const LetterheadManager: React.FC = () => {
   const {
     letterheadTemplates,
     letterheadDocuments,
+    companyDetails,
     saveLetterheadTemplate,
     deleteLetterheadTemplate,
     setDefaultLetterheadTemplate,
@@ -86,7 +94,7 @@ export const LetterheadManager: React.FC = () => {
   } = useStore();
 
   // Navigation Sub-tab
-  const [subTab, setSubTab] = useState<'documents' | 'templates' | 'composer'>('documents');
+  const [subTab, setSubTab] = useState<'documents' | 'templates' | 'composer' | 'company_details'>('documents');
   const [documentSearch, setDocumentSearch] = useState<string>('');
   const [documentFilterCategory, setDocumentFilterCategory] = useState<string>('all');
   const [documentFilterStatus, setDocumentFilterStatus] = useState<string>('all');
@@ -265,7 +273,18 @@ export const LetterheadManager: React.FC = () => {
       REFERENCE_NUMBER: doc.referenceNumber || 'REF-UNASSIGNED',
       DOCUMENT_DATE: doc.documentDate ? new Date(doc.documentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString(),
       SUBJECT: doc.subject || '',
-      DISTILLERY_NAME: template.distilleryName || 'Zookas Unity Spirits',
+      DISTILLERY_NAME: companyDetails?.tradeName || template.distilleryName || 'Zookas Unity Spirits',
+      COMPANY_NAME: companyDetails?.companyName || "Zooka's Unity Spirits Private Limited",
+      TRADE_NAME: companyDetails?.tradeName || "Zooka's Unity Spirits Distillery",
+      COMPANY_CIN: companyDetails?.cin || 'U15549DL2024PTC392810',
+      COMPANY_GSTIN: companyDetails?.gstin || '07AAAAZ8821A1Z9',
+      COMPANY_PAN: companyDetails?.pan || 'AAAAZ8821A',
+      EXCISE_LICENSE: companyDetails?.exciseLicense || template.taxExciseLicense || 'SCOT-EXCISE-BW-8841-B',
+      REGISTERED_ADDRESS: companyDetails?.registeredAddress || template.contactAddress,
+      DISTILLERY_ADDRESS: companyDetails?.distilleryAddress || template.contactAddress,
+      COMPANY_EMAIL: companyDetails?.email || template.contactEmail,
+      COMPANY_PHONE: companyDetails?.phone || template.contactPhone,
+      COMPANY_WEBSITE: companyDetails?.website || template.contactWebsite,
       SIGNATORY_NAME: doc.customSignatoryName || template.signatoryName || 'Alistair Vance',
       SIGNATORY_TITLE: doc.customSignatoryTitle || template.signatoryTitle || 'Master Distiller',
       CO_SIGNATORY_NAME: template.coSignatoryName || 'Lady Fiona MacIntyre',
@@ -565,6 +584,21 @@ export const LetterheadManager: React.FC = () => {
         </button>
 
         <button
+          onClick={() => setSubTab('company_details')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[42px] ${
+            subTab === 'company_details'
+              ? 'bg-amber-600/20 text-amber-300 border border-amber-500/30 shadow-sm'
+              : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900/60'
+          }`}
+        >
+          <Building2 className="w-4 h-4 shrink-0 text-amber-400" />
+          <span>Company & Legal Details (CIN / GST)</span>
+          <span className="text-[10px] bg-amber-500/10 border border-amber-500/30 text-amber-300 px-1.5 py-0.2 rounded font-mono">
+            CIN/GST
+          </span>
+        </button>
+
+        <button
           onClick={() => setSubTab('composer')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all cursor-pointer whitespace-nowrap shrink-0 min-h-[42px] ${
             subTab === 'composer'
@@ -581,6 +615,13 @@ export const LetterheadManager: React.FC = () => {
           )}
         </button>
       </div>
+
+      {/* ========================================================================= */}
+      {/* SUB-TAB 4: COMPANY & STATUTORY REGISTRY DETAILS (CIN / GSTIN / LOGO) */}
+      {/* ========================================================================= */}
+      {subTab === 'company_details' && (
+        <CompanyDetailsTab onGoToComposer={() => setSubTab('composer')} />
+      )}
 
       {/* ========================================================================= */}
       {/* SUB-TAB 1: OFFICIAL DOCUMENTS & DEEDS ARCHIVE */}
@@ -1061,6 +1102,12 @@ export const LetterheadManager: React.FC = () => {
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {[
+                  { label: 'Company Name', token: 'COMPANY_NAME' },
+                  { label: 'Company CIN', token: 'COMPANY_CIN' },
+                  { label: 'Company GSTIN', token: 'COMPANY_GSTIN' },
+                  { label: 'Company PAN', token: 'COMPANY_PAN' },
+                  { label: 'Excise License', token: 'EXCISE_LICENSE' },
+                  { label: 'Reg. Address', token: 'REGISTERED_ADDRESS' },
                   { label: 'Recipient Name', token: 'RECIPIENT_NAME' },
                   { label: 'Company', token: 'RECIPIENT_COMPANY' },
                   { label: 'Reference No.', token: 'REFERENCE_NUMBER' },
@@ -1316,93 +1363,113 @@ export const LetterheadManager: React.FC = () => {
             {/* Live Stationery Canvas Sheet */}
             <div className="bg-stone-950 p-6 md:p-8 rounded-xl border border-stone-800 flex justify-center overflow-x-auto shadow-inner">
               <div
-                className="w-full max-w-3xl shadow-2xl relative rounded-sm transition-all"
+                className="w-full max-w-3xl shadow-2xl relative rounded-sm transition-all overflow-hidden flex flex-col justify-between"
                 style={{
                   backgroundColor: paperTheme.bg,
                   color: paperTheme.text,
-                  fontFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
-                  minHeight: '880px',
-                  padding: '40px 48px',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                  minHeight: '920px',
+                  padding: '36px 44px 0px 44px',
                   border: `2px solid ${paperTheme.border}`
                 }}
               >
-                {/* Subtle Watermark Layer */}
-                {activeTemplate.watermarkType !== 'none' && (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
-                    style={{
-                      opacity: activeTemplate.watermarkOpacity || 0.08,
-                      transform: `rotate(${activeTemplate.watermarkRotation || -25}deg)`
-                    }}
-                  >
-                    <span
-                      className="font-serif font-black text-6xl md:text-8xl tracking-widest uppercase text-center"
-                      style={{ color: paperTheme.accent }}
-                    >
-                      {activeTemplate.watermarkText || activeTemplate.distilleryName}
-                    </span>
-                  </div>
-                )}
-
-                {/* Corner Emblems */}
-                <div className="absolute top-2 left-2 text-amber-700/60 font-serif text-xs">✦</div>
-                <div className="absolute top-2 right-2 text-amber-700/60 font-serif text-xs">✦</div>
-                <div className="absolute bottom-2 left-2 text-amber-700/60 font-serif text-xs">✦</div>
-                <div className="absolute bottom-2 right-2 text-amber-700/60 font-serif text-xs">✦</div>
-
-                {/* --- HEADER --- */}
-                <header className="mb-6 pb-4 relative z-10 border-b-2" style={{ borderColor: paperTheme.border }}>
-                  <div className="flex flex-col items-center justify-center space-y-1 text-center">
-                    {/* Royal Warrant */}
-                    {activeTemplate.showRoyalWarrant && activeTemplate.royalWarrantText && (
-                      <div
-                        className="text-[10px] tracking-widest uppercase font-semibold mb-1"
-                        style={{ color: paperTheme.accent }}
-                      >
-                        {activeTemplate.royalWarrantText}
-                      </div>
-                    )}
-
-                    <h1
-                      className="text-2xl md:text-3xl font-serif font-black tracking-wider uppercase m-0"
-                      style={{ color: paperTheme.accent }}
-                    >
-                      {activeTemplate.distilleryName}
-                    </h1>
-
-                    <p className="text-xs md:text-sm italic tracking-wide opacity-90 m-0">
-                      {activeTemplate.tagline} • {activeTemplate.heritageYear}
-                    </p>
-
-                    {/* Contact & Statutory Registry Bar */}
-                    <div className="text-[10px] opacity-75 mt-2 flex flex-wrap justify-center gap-x-3 gap-y-0.5">
-                      <span>{activeTemplate.contactAddress}</span>
-                      <span>•</span>
-                      <span>{activeTemplate.contactPhone}</span>
-                      <span>•</span>
-                      <span>{activeTemplate.bondHouseRegistration}</span>
-                    </div>
-                  </div>
-                </header>
-
-                {/* --- RECIPIENT & REFERENCE METADATA BAR --- */}
-                <div className="grid grid-cols-2 gap-4 pb-3 mb-6 border-b border-dashed opacity-80 text-xs relative z-10">
-                  <div>
-                    <span className="font-semibold" style={{ color: paperTheme.accent }}>To:</span>{' '}
-                    <strong>{activeDoc.recipientName}</strong>
-                    {activeDoc.recipientCompany && <div className="text-[11px] opacity-80">{activeDoc.recipientCompany}</div>}
-                    {activeDoc.recipientAddress && <div className="text-[10px] opacity-70">{activeDoc.recipientAddress}</div>}
-                  </div>
-                  <div className="text-right">
-                    <div>
-                      <span className="font-semibold" style={{ color: paperTheme.accent }}>Ref:</span>{' '}
-                      <span className="font-mono font-bold">{activeDoc.referenceNumber}</span>
-                    </div>
-                    <div className="text-[11px]">
-                      Date: {activeDoc.documentDate ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString()}
-                    </div>
-                  </div>
+                {/* Official Top-Right Orange Geometric Polygon Accent */}
+                <div className="absolute top-0 right-0 w-36 sm:w-52 h-20 sm:h-28 pointer-events-none z-10">
+                  <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                    <polygon points="65,0 200,0 200,85 130,85" fill="#E67E22" />
+                    <polygon points="115,0 200,0 200,50 155,50" fill="#F39C12" opacity="0.9" />
+                    <polygon points="60,0 67,0 132,85 125,85" fill="#D35400" />
+                  </svg>
                 </div>
+
+                {/* Subtle Official Watermark Layer */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
+                  style={{ opacity: 0.045 }}
+                >
+                  <ZookasOfficialCrest size={340} variant="watermark" showText={true} />
+                </div>
+
+                {/* Main Content Area */}
+                <div className="relative z-10 flex-1 flex flex-col">
+                  {/* Top-Left GSTIN */}
+                  {(companyDetails?.showGstOnLetterhead ?? true) && (
+                    <div className="text-[11px] sm:text-xs font-black tracking-tight text-black mb-1.5 flex items-center gap-1 font-mono">
+                      <span>GSTIN:</span>
+                      <span className="font-extrabold">{companyDetails?.gstin || "19AACCZ7001P1ZU"}</span>
+                    </div>
+                  )}
+
+                  {/* Header Row: Crest on Left, Centered Company Details */}
+                  <header className="mb-2 relative z-10">
+                    <div className="flex flex-row items-center gap-4 text-left">
+                      {/* Left Crest Logo */}
+                      <div className="shrink-0 flex items-center justify-center">
+                        {((companyDetails?.logoType === 'custom_image' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
+                          <img
+                            src={companyDetails.logoUrl}
+                            alt="Company Logo"
+                            referrerPolicy="no-referrer"
+                            className="object-contain max-h-20 sm:max-h-24"
+                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 130)}px` }}
+                          />
+                        ) : (
+                          <ZookasOfficialCrest size={82} variant="gold" showText={true} />
+                        )}
+                      </div>
+
+                      {/* Right/Center Company Details */}
+                      <div className="flex-1 text-center pr-6 sm:pr-10">
+                        <h1 className="text-base sm:text-xl md:text-2xl font-black uppercase text-black leading-tight tracking-wide font-sans m-0">
+                          {companyDetails?.companyName || "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED"}
+                        </h1>
+
+                        {(companyDetails?.showAddressOnLetterhead ?? true) && (
+                          <p className="text-[10px] sm:text-[11.5px] text-stone-900 leading-snug mt-1 max-w-xl mx-auto font-sans font-medium">
+                            {companyDetails?.registeredAddress || "Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311"}
+                          </p>
+                        )}
+
+                        {(companyDetails?.showCinOnLetterhead ?? true) && (
+                          <p className="text-[10.5px] sm:text-[11.5px] font-bold text-black mt-0.5 font-mono">
+                            CIN NO:-{companyDetails?.cin || "U73100WB2025PTC281568 / U46305WB2025PTC281568"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Official Golden/Amber Divider Bar */}
+                    <div className="w-full h-1 bg-gradient-to-r from-amber-600 via-[#E67E22] to-amber-700 my-2.5 rounded-sm" />
+
+                    {/* Registration No & Date Subheader */}
+                    <div className="flex flex-row items-center justify-between text-xs sm:text-[13px] font-bold text-black pb-2 border-b border-stone-200">
+                      <div>
+                        Registration No :-{' '}
+                        <span className="font-mono font-semibold text-stone-800">
+                          {activeDoc.referenceNumber || 'ZUBD/2026/REG-001'}
+                        </span>
+                      </div>
+                      <div>
+                        Date:-{' '}
+                        <span className="font-semibold text-stone-800">
+                          {activeDoc.documentDate
+                            ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB')
+                            : new Date().toLocaleDateString('en-GB')}
+                        </span>
+                      </div>
+                    </div>
+                  </header>
+
+                  {/* Recipient Information Bar */}
+                  {activeDoc.recipientName && (
+                    <div className="py-2.5 mb-3 border-b border-dashed border-stone-300 text-xs text-stone-800">
+                      <div className="font-bold text-stone-900">{activeDoc.recipientName}</div>
+                      {activeDoc.recipientTitle && <div>{activeDoc.recipientTitle}</div>}
+                      {activeDoc.recipientCompany && <div className="font-medium">{activeDoc.recipientCompany}</div>}
+                      {activeDoc.recipientAddress && <div className="text-[11px] text-stone-600">{activeDoc.recipientAddress}</div>}
+                      {activeDoc.subject && <div className="mt-1.5 font-bold text-amber-900 italic">Subject: {activeDoc.subject}</div>}
+                    </div>
+                  )}
 
                 {/* --- EDITABLE DOCUMENT BODY --- */}
                 <div className="relative z-10 min-h-[380px]">
@@ -1431,55 +1498,52 @@ export const LetterheadManager: React.FC = () => {
                   )}
                 </div>
 
-                {/* --- FOOTER & SIGNATURE --- */}
-                <footer className="mt-12 pt-6 border-t relative z-10" style={{ borderColor: paperTheme.border }}>
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                    {/* Wax Seal Badge */}
-                    {activeTemplate.showWaxSeal && (
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-14 h-14 rounded-full border-2 flex items-center justify-center p-1 text-center shadow-inner"
-                          style={{
-                            borderColor: activeTemplate.waxSealColor === 'ruby_crimson' ? '#991b1b' : paperTheme.accent,
-                            color: activeTemplate.waxSealColor === 'ruby_crimson' ? '#991b1b' : paperTheme.accent,
-                            backgroundColor: 'rgba(217, 119, 6, 0.08)'
-                          }}
-                        >
-                          <div className="text-[8px] font-serif font-black leading-tight uppercase">
-                            OFFICIAL<br />SEAL<br />1892
+                  {/* Signatory Area if enabled */}
+                  {activeTemplate.showSignatureBlock && (
+                    <div className="mt-6 mb-4 flex justify-end">
+                      <div className="text-center min-w-[200px]">
+                        <div className="font-serif italic text-base font-bold mb-1 text-amber-900">
+                          {activeDoc.customSignatoryName || activeTemplate.signatoryName || "For ZOOKAS UNITY BLENDERS & DISTILLERS"}
+                        </div>
+                        <div className="w-36 h-px mx-auto mb-1 bg-stone-400" />
+                        <div className="text-[11px] font-bold uppercase tracking-wider text-stone-800">
+                          {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle || "Authorized Signatory"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* --- OFFICIAL VIBRANT ORANGE GEOMETRIC RIBBON FOOTER --- */}
+                <footer className="relative z-10 -mx-11 mt-6">
+                  <div className="relative bg-[#E67E22] text-white py-2.5 px-8 overflow-hidden flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-md">
+                    {/* Left/Center: Contact details with icons */}
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-6 gap-y-1 text-xs font-medium tracking-wide">
+                      {(companyDetails?.showContactOnLetterhead ?? true) && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <Globe className="w-3.5 h-3.5 text-white shrink-0" />
+                            <span>{(companyDetails?.website || "www.zookasunityspirits.in").replace(/^https?:\/\//, '')}</span>
                           </div>
-                        </div>
-                        <div className="text-[10px] max-w-[200px] italic leading-tight opacity-80">
-                          {activeTemplate.waxSealText}
-                        </div>
-                      </div>
-                    )}
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-3.5 h-3.5 text-white shrink-0" />
+                            <span>{companyDetails?.phone || "9593712358"}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-white shrink-0" />
+                            <span>{companyDetails?.email || "zookasspirit123@gmail.com"}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
-                    {/* Signatory Block */}
-                    {activeTemplate.showSignatureBlock && (
-                      <div className="text-center min-w-[220px]">
-                        <div className="font-serif italic text-base md:text-lg mb-1 tracking-wider font-bold" style={{ color: paperTheme.accent }}>
-                          {activeDoc.customSignatoryName || activeTemplate.signatoryName}
-                        </div>
-                        <div className="w-36 h-px mx-auto mb-1 opacity-80" style={{ backgroundColor: paperTheme.text }} />
-                        <div className="text-[11px] font-bold uppercase tracking-wider">
-                          {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle}
-                        </div>
-                        <div className="text-[9px] opacity-75">
-                          {activeDoc.documentDate}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Security Verification & Legal Disclaimer */}
-                  <div className="mt-6 pt-4 border-t border-dashed opacity-60 text-center text-[10px] space-y-1">
-                    <div>{activeTemplate.legalDisclaimer}</div>
-                    {activeTemplate.showSecurityQrHash && (
-                      <div className="font-mono text-[9px]">
-                        Authentication Hash: {activeTemplate.securityHashPrefix}{activeDoc.securityVerificationCode || '8841-99201'}
-                      </div>
-                    )}
+                    {/* Right Geometric Facets */}
+                    <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-28 pointer-events-none">
+                      <svg viewBox="0 0 100 50" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                        <polygon points="45,50 65,0 78,0 58,50" fill="#FFFFFF" />
+                        <polygon points="75,50 90,0 100,0 100,50" fill="#F39C12" />
+                      </svg>
+                    </div>
                   </div>
                 </footer>
               </div>
@@ -1839,142 +1903,169 @@ export const LetterheadManager: React.FC = () => {
             <div className="p-8 overflow-y-auto bg-stone-950 flex justify-center flex-1">
               <div
                 id="printable-letterhead-document"
-                className="w-full max-w-3xl shadow-2xl relative transition-transform origin-top"
+                className="w-full max-w-3xl shadow-2xl relative transition-transform origin-top overflow-hidden flex flex-col justify-between"
                 style={{
                   transform: `scale(${previewZoom / 100})`,
                   backgroundColor: paperTheme.bg,
                   color: paperTheme.text,
-                  fontFamily: 'Georgia, Cambria, "Times New Roman", Times, serif',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
                   minHeight: '1050px',
-                  padding: '48px 56px',
+                  padding: '40px 48px 0px 48px',
                   border: `2px solid ${paperTheme.border}`
                 }}
               >
-                {/* Watermark in Print View */}
-                {activeTemplate.watermarkType !== 'none' && (
-                  <div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
-                    style={{
-                      opacity: activeTemplate.watermarkOpacity || 0.08,
-                      transform: `rotate(${activeTemplate.watermarkRotation || -25}deg)`
-                    }}
-                  >
-                    <span
-                      className="font-serif font-black text-7xl md:text-9xl tracking-widest uppercase text-center"
-                      style={{ color: paperTheme.accent }}
-                    >
-                      {activeTemplate.watermarkText || activeTemplate.distilleryName}
-                    </span>
-                  </div>
-                )}
-
-                {/* Print Header */}
-                <header className="mb-8 pb-4 relative z-10 border-b-2" style={{ borderColor: paperTheme.border }}>
-                  <div className="flex flex-col items-center justify-center space-y-1 text-center">
-                    {activeTemplate.showRoyalWarrant && activeTemplate.royalWarrantText && (
-                      <div
-                        className="text-[10px] tracking-widest uppercase font-semibold mb-1"
-                        style={{ color: paperTheme.accent }}
-                      >
-                        {activeTemplate.royalWarrantText}
-                      </div>
-                    )}
-
-                    <h1
-                      className="text-3xl font-serif font-black tracking-wider uppercase m-0"
-                      style={{ color: paperTheme.accent }}
-                    >
-                      {activeTemplate.distilleryName}
-                    </h1>
-
-                    <p className="text-sm italic tracking-wide opacity-90 m-0">
-                      {activeTemplate.tagline} • {activeTemplate.heritageYear}
-                    </p>
-
-                    <div className="text-[10px] opacity-75 mt-2 flex flex-wrap justify-center gap-x-3">
-                      <span>{activeTemplate.contactAddress}</span>
-                      <span>•</span>
-                      <span>{activeTemplate.contactPhone}</span>
-                      <span>•</span>
-                      <span>{activeTemplate.bondHouseRegistration}</span>
-                    </div>
-                  </div>
-                </header>
-
-                {/* Recipient & Reference */}
-                <div className="grid grid-cols-2 gap-4 pb-4 mb-6 border-b border-dashed opacity-80 text-xs relative z-10">
-                  <div>
-                    <div className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: paperTheme.accent }}>
-                      Issued To:
-                    </div>
-                    <div className="font-bold text-sm">{activeDoc.recipientName}</div>
-                    {activeDoc.recipientTitle && <div>{activeDoc.recipientTitle}</div>}
-                    {activeDoc.recipientCompany && <div>{activeDoc.recipientCompany}</div>}
-                    {activeDoc.recipientAddress && <div className="text-[11px] opacity-75">{activeDoc.recipientAddress}</div>}
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold uppercase tracking-wider text-[10px]" style={{ color: paperTheme.accent }}>
-                      Archival Record:
-                    </div>
-                    <div className="font-mono font-bold text-sm">{activeDoc.referenceNumber}</div>
-                    <div className="text-xs">
-                      Date: {activeDoc.documentDate ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString()}
-                    </div>
-                    {activeDoc.subject && <div className="text-[11px] italic opacity-85">{activeDoc.subject}</div>}
-                  </div>
+                {/* Official Top-Right Orange Geometric Polygon Accent */}
+                <div className="absolute top-0 right-0 w-44 sm:w-60 h-24 sm:h-32 pointer-events-none z-10">
+                  <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                    <polygon points="65,0 200,0 200,85 130,85" fill="#E67E22" />
+                    <polygon points="115,0 200,0 200,50 155,50" fill="#F39C12" opacity="0.9" />
+                    <polygon points="60,0 67,0 132,85 125,85" fill="#D35400" />
+                  </svg>
                 </div>
 
-                {/* Resolved Body Content */}
+                {/* Subtle Official Watermark Layer */}
                 <div
-                  className="relative z-10 leading-relaxed text-sm md:text-base space-y-4"
-                  dangerouslySetInnerHTML={{
-                    __html: resolveContentVariables(activeDoc.contentHtml, activeDoc, activeTemplate)
-                  }}
-                />
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
+                  style={{ opacity: 0.045 }}
+                >
+                  <ZookasOfficialCrest size={380} variant="watermark" showText={true} />
+                </div>
 
-                {/* Print Footer */}
-                <footer className="mt-16 pt-6 border-t relative z-10" style={{ borderColor: paperTheme.border }}>
-                  <div className="flex items-center justify-between">
-                    {/* Seal */}
-                    {activeTemplate.showWaxSeal && (
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-16 h-16 rounded-full border-2 flex items-center justify-center p-1 text-center"
-                          style={{
-                            borderColor: activeTemplate.waxSealColor === 'ruby_crimson' ? '#991b1b' : paperTheme.accent,
-                            color: activeTemplate.waxSealColor === 'ruby_crimson' ? '#991b1b' : paperTheme.accent,
-                            backgroundColor: 'rgba(217, 119, 6, 0.08)'
-                          }}
-                        >
-                          <div className="text-[9px] font-serif font-black leading-tight uppercase">
-                            OFFICIAL<br />ARCHIVE<br />1892
-                          </div>
-                        </div>
-                        <div className="text-[10px] italic max-w-[220px]" style={{ color: paperTheme.accent }}>
-                          {activeTemplate.waxSealText}
-                        </div>
+                {/* Main Content Area */}
+                <div className="relative z-10 flex-1 flex flex-col">
+                  {/* Top-Left GSTIN */}
+                  {(companyDetails?.showGstOnLetterhead ?? true) && (
+                    <div className="text-xs font-black tracking-tight text-black mb-1.5 flex items-center gap-1 font-mono">
+                      <span>GSTIN:</span>
+                      <span className="font-extrabold">{companyDetails?.gstin || "19AACCZ7001P1ZU"}</span>
+                    </div>
+                  )}
+
+                  {/* Header Row: Crest on Left, Centered Company Details */}
+                  <header className="mb-2 relative z-10">
+                    <div className="flex flex-row items-center gap-4 text-left">
+                      {/* Left Crest Logo */}
+                      <div className="shrink-0 flex items-center justify-center">
+                        {((companyDetails?.logoType === 'custom_image' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
+                          <img
+                            src={companyDetails.logoUrl}
+                            alt="Company Logo"
+                            referrerPolicy="no-referrer"
+                            className="object-contain max-h-24"
+                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 140)}px` }}
+                          />
+                        ) : (
+                          <ZookasOfficialCrest size={90} variant="gold" showText={true} />
+                        )}
                       </div>
-                    )}
 
-                    {/* Signature Block */}
-                    {activeTemplate.showSignatureBlock && (
+                      {/* Right/Center Company Details */}
+                      <div className="flex-1 text-center pr-8">
+                        <h1 className="text-lg sm:text-2xl font-black uppercase text-black leading-tight tracking-wide font-sans m-0">
+                          {companyDetails?.companyName || "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED"}
+                        </h1>
+
+                        {(companyDetails?.showAddressOnLetterhead ?? true) && (
+                          <p className="text-[11px] sm:text-xs text-stone-900 leading-snug mt-1 max-w-xl mx-auto font-sans font-medium">
+                            {companyDetails?.registeredAddress || "Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311"}
+                          </p>
+                        )}
+
+                        {(companyDetails?.showCinOnLetterhead ?? true) && (
+                          <p className="text-xs font-bold text-black mt-0.5 font-mono">
+                            CIN NO:-{companyDetails?.cin || "U73100WB2025PTC281568 / U46305WB2025PTC281568"}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Official Golden/Amber Divider Bar */}
+                    <div className="w-full h-1.5 bg-gradient-to-r from-amber-600 via-[#E67E22] to-amber-700 my-3 rounded-sm" />
+
+                    {/* Registration No & Date Subheader */}
+                    <div className="flex flex-row items-center justify-between text-xs sm:text-sm font-bold text-black pb-2 border-b border-stone-200">
+                      <div>
+                        Registration No :-{' '}
+                        <span className="font-mono font-semibold text-stone-800">
+                          {activeDoc.referenceNumber || 'ZUBD/2026/REG-001'}
+                        </span>
+                      </div>
+                      <div>
+                        Date:-{' '}
+                        <span className="font-semibold text-stone-800">
+                          {activeDoc.documentDate
+                            ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB')
+                            : new Date().toLocaleDateString('en-GB')}
+                        </span>
+                      </div>
+                    </div>
+                  </header>
+
+                  {/* Recipient Information Bar */}
+                  {activeDoc.recipientName && (
+                    <div className="py-3 mb-4 border-b border-dashed border-stone-300 text-xs text-stone-800">
+                      <div className="font-bold text-stone-900 text-sm">{activeDoc.recipientName}</div>
+                      {activeDoc.recipientTitle && <div>{activeDoc.recipientTitle}</div>}
+                      {activeDoc.recipientCompany && <div className="font-medium">{activeDoc.recipientCompany}</div>}
+                      {activeDoc.recipientAddress && <div className="text-[11px] text-stone-600">{activeDoc.recipientAddress}</div>}
+                      {activeDoc.subject && <div className="mt-2 font-bold text-amber-900 italic">Subject: {activeDoc.subject}</div>}
+                    </div>
+                  )}
+
+                  {/* Resolved Body Content */}
+                  <div
+                    className="relative z-10 leading-relaxed text-sm md:text-base space-y-4 flex-1"
+                    dangerouslySetInnerHTML={{
+                      __html: resolveContentVariables(activeDoc.contentHtml, activeDoc, activeTemplate)
+                    }}
+                  />
+
+                  {/* Signatory Area */}
+                  {activeTemplate.showSignatureBlock && (
+                    <div className="mt-8 mb-6 flex justify-end">
                       <div className="text-center min-w-[220px]">
-                        <div className="font-serif italic text-lg font-bold mb-1" style={{ color: paperTheme.accent }}>
-                          {activeDoc.customSignatoryName || activeTemplate.signatoryName}
+                        <div className="font-serif italic text-base font-bold mb-1 text-amber-900">
+                          {activeDoc.customSignatoryName || activeTemplate.signatoryName || "For ZOOKAS UNITY BLENDERS & DISTILLERS"}
                         </div>
-                        <div className="w-40 h-px mx-auto mb-1 opacity-80" style={{ backgroundColor: paperTheme.text }} />
-                        <div className="text-[11px] font-bold uppercase tracking-wider">
-                          {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle}
-                        </div>
-                        <div className="text-[10px] opacity-75">
-                          {activeDoc.documentDate}
+                        <div className="w-40 h-px mx-auto mb-1 bg-stone-400" />
+                        <div className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                          {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle || "Authorized Signatory"}
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                </div>
 
-                  <div className="mt-8 text-center text-[10px] opacity-60 italic">
-                    {activeTemplate.legalDisclaimer} • {activeTemplate.bondHouseRegistration}
+                {/* --- OFFICIAL VIBRANT ORANGE GEOMETRIC RIBBON FOOTER --- */}
+                <footer className="relative z-10 -mx-12 mt-6">
+                  <div className="relative bg-[#E67E22] text-white py-3 px-10 overflow-hidden flex flex-row items-center justify-between gap-4 text-xs shadow-md">
+                    {/* Contact Details */}
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-1 text-xs font-medium tracking-wide">
+                      {(companyDetails?.showContactOnLetterhead ?? true) && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <Globe className="w-4 h-4 text-white shrink-0" />
+                            <span>{(companyDetails?.website || "www.zookasunityspirits.in").replace(/^https?:\/\//, '')}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="w-4 h-4 text-white shrink-0" />
+                            <span>{companyDetails?.phone || "9593712358"}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Mail className="w-4 h-4 text-white shrink-0" />
+                            <span>{companyDetails?.email || "zookasspirit123@gmail.com"}</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Right Geometric Facets */}
+                    <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-32 pointer-events-none">
+                      <svg viewBox="0 0 100 50" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                        <polygon points="45,50 65,0 78,0 58,50" fill="#FFFFFF" />
+                        <polygon points="75,50 90,0 100,0 100,50" fill="#F39C12" />
+                      </svg>
+                    </div>
                   </div>
                 </footer>
               </div>

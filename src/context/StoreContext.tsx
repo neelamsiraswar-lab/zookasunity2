@@ -27,7 +27,8 @@ import {
   BallotEntryStatus,
   AppTab,
   LetterheadTemplate,
-  LetterheadDocument
+  LetterheadDocument,
+  CompanyDetails
 } from '../types';
 import {
   initialProducts,
@@ -48,7 +49,8 @@ import {
 } from '../data/initialData';
 import {
   initialLetterheadTemplates,
-  initialLetterheadDocuments
+  initialLetterheadDocuments,
+  initialCompanyDetails
 } from '../data/initialLetterheadData';
 
 export const normalizeHeaderConfig = (incoming?: Partial<HeaderCustomizationConfig> | null): HeaderCustomizationConfig => {
@@ -380,6 +382,8 @@ interface StoreContextType {
   // Letterhead Management & Document Composer (Cloud CRUD)
   letterheadTemplates: LetterheadTemplate[];
   letterheadDocuments: LetterheadDocument[];
+  companyDetails: CompanyDetails;
+  updateCompanyDetails: (details: CompanyDetails) => Promise<void>;
   saveLetterheadTemplate: (template: LetterheadTemplate) => Promise<void>;
   deleteLetterheadTemplate: (templateId: string) => Promise<void>;
   setDefaultLetterheadTemplate: (templateId: string) => Promise<void>;
@@ -578,6 +582,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
+  const [companyDetails, setCompanyDetails] = useState<CompanyDetails>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_company_details`);
+      return saved ? JSON.parse(saved) : initialCompanyDetails;
+    } catch {
+      return initialCompanyDetails;
+    }
+  });
+
   const [activeBallotModal, setActiveBallotModal] = useState<BallotAllocation | null>(null);
 
   // Customer Session & Login State
@@ -685,6 +698,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_letterhead_docs`, JSON.stringify(letterheadDocuments)); } catch (_) {}
   }, [letterheadDocuments]);
 
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(companyDetails)); } catch (_) {}
+  }, [companyDetails]);
+
   // ==========================================
   // REAL-TIME FIRESTORE SUBSCRIPTIONS & SYNC
   // ==========================================
@@ -770,6 +787,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (contents.header) setHeaderConfig(normalizeHeaderConfig(contents.header));
           if (contents.footer) setFooterConfig(normalizeFooterConfig(contents.footer));
           if (contents.bottomNavbar) setBottomNavbarConfig(normalizeBottomNavbarConfig(contents.bottomNavbar));
+          if (contents.companyDetails) setCompanyDetails(contents.companyDetails);
           setCloudSyncStatus('connected');
           setLastSyncedAt(new Date());
         });
@@ -1257,6 +1275,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const resetBottomNavbarConfig = () => {
     setBottomNavbarConfig(initialBottomNavbarConfig);
     saveCloudSiteContent('bottom_navbar', initialBottomNavbarConfig).catch(e => console.warn('Cloud reset bottom navbar notice:', e));
+  };
+
+  const updateCompanyDetails = async (details: CompanyDetails) => {
+    const updated = {
+      ...details,
+      updatedAt: new Date().toISOString()
+    };
+    setCompanyDetails(updated);
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(updated));
+    } catch (_) {}
+    await saveCloudSiteContent('company_details', updated);
   };
 
   // =========================================================================
@@ -1943,6 +1973,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setBallotEntries(initialBallotEntries);
     setLetterheadTemplates(initialLetterheadTemplates);
     setLetterheadDocuments(initialLetterheadDocuments);
+    setCompanyDetails(initialCompanyDetails);
     setCart([]);
     try { localStorage.clear(); } catch (_) {}
     // Reseed cloud
@@ -2053,6 +2084,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setDefaultAddress,
         letterheadTemplates,
         letterheadDocuments,
+        companyDetails,
+        updateCompanyDetails,
         saveLetterheadTemplate,
         deleteLetterheadTemplate,
         setDefaultLetterheadTemplate,

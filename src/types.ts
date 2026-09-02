@@ -671,6 +671,36 @@ export type LetterheadAccentColor =
   | 'ruby' 
   | 'slate';
 
+export interface CompanyDetails {
+  companyName: string; // Registered Corporate Legal Name, e.g., "Zooka's Unity Spirits Private Limited"
+  tradeName: string; // Brand / Trade Name, e.g., "Zooka's Unity Spirits Distillery"
+  tagline: string; // e.g., "Highlands Craft Spirits & Bonded Cask Keepers"
+  logoUrl?: string; // Custom logo image URL / base64
+  logoType: 'custom_image' | 'distillery_crest' | 'both';
+  logoWidth: number; // e.g. 120
+  cin: string; // Corporate Identity Number (CIN), e.g. "U15549DL2024PTC392810"
+  gstin: string; // GSTIN / GST Number, e.g. "07AAAAZ8821A1Z9"
+  pan: string; // Permanent Account Number (PAN), e.g. "AAAAZ8821A"
+  exciseLicense: string; // Excise & Bonded Warehouse License, e.g. "SCOT-EXCISE-BW-8841-B"
+  registeredAddress: string; // Full Registered Corporate Office Address
+  distilleryAddress: string; // Distillery Estate / Cellars Location
+  email: string; // Official email
+  phone: string; // Phone number
+  website: string; // Official website
+  supportPhone?: string; // Concierge / Support hotline
+  // Display Toggles on Letterhead
+  showCinOnLetterhead: boolean;
+  showGstOnLetterhead: boolean;
+  showPanOnLetterhead: boolean;
+  showExciseOnLetterhead: boolean;
+  showAddressOnLetterhead: boolean;
+  showContactOnLetterhead: boolean;
+  headerLogoLayout?: 'left_aligned_row' | 'centered_stack';
+  headerDetailsPosition?: 'top_right' | 'below_logo' | 'footer_band' | 'dual_column';
+  footerNoticeText?: string;
+  updatedAt?: string;
+}
+
 export interface LetterheadTemplate {
   id: string;
   name: string;
@@ -684,6 +714,15 @@ export interface LetterheadTemplate {
   heritageYear: string;
   crestIcon: string;
   customLogoUrl?: string;
+  logoType?: 'custom_image' | 'distillery_crest' | 'both';
+  logoWidth?: number;
+  useGlobalCompanyDetails?: boolean;
+  cin?: string;
+  gstin?: string;
+  pan?: string;
+  showCin?: boolean;
+  showGst?: boolean;
+  showPan?: boolean;
   showRoyalWarrant: boolean;
   royalWarrantText?: string;
   bondHouseRegistration: string;
