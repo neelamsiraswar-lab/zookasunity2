@@ -7,6 +7,7 @@ import { HeaderCustomizer } from '../admin/HeaderCustomizer';
 import { FooterCustomizer } from '../admin/FooterCustomizer';
 import { BottomNavCustomizer } from '../admin/BottomNavCustomizer';
 import { BallotDrawsAdmin } from '../admin/BallotDrawsAdmin';
+import { LetterheadManager } from '../admin/LetterheadManager';
 import { 
   SpiritProduct, 
   DistillerInventoryItem, 
@@ -80,7 +81,8 @@ import {
   PanelBottom,
   Crown,
   Ticket,
-  Smartphone
+  Smartphone,
+  Stamp
 } from 'lucide-react';
 
 export const AdminPanelView: React.FC = () => {
@@ -109,6 +111,8 @@ export const AdminPanelView: React.FC = () => {
     resetToDefaultData,
     ballotAllocations,
     ballotEntries,
+    letterheadDocuments,
+    letterheadTemplates,
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
@@ -139,7 +143,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_home' | 'cms_about' | 'cms_header' | 'cms_footer' | 'cms_bottom_nav' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -933,6 +937,7 @@ export const AdminPanelView: React.FC = () => {
           { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
           { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
           { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
+          { id: 'cms_letterheads', label: `Stationery & Letterheads (${letterheadDocuments?.length || 0})`, icon: Stamp },
           { id: 'cms_header', label: 'Header & Navigation CMS', icon: LayoutTemplate },
           { id: 'cms_bottom_nav', label: 'Bottom Navigation Bar CMS', icon: Smartphone },
           { id: 'cms_home', label: 'Home Page CMS', icon: FileEdit },
@@ -2928,6 +2933,9 @@ export const AdminPanelView: React.FC = () => {
 
       {/* RARE ALLOCATIONS & BALLOT DRAWS */}
       {activeTab === 'ballots' && <BallotDrawsAdmin />}
+
+      {/* LETTERHEAD & OFFICIAL STATIONERY CMS */}
+      {activeTab === 'cms_letterheads' && <LetterheadManager />}
 
       {/* HEADER & NAVIGATION CMS */}
       {activeTab === 'cms_header' && <HeaderCustomizer />}

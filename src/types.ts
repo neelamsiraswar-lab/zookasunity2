@@ -625,3 +625,119 @@ export interface BottomNavbarCustomizationConfig {
   enableHapticGlow: boolean;
   items: BottomNavItem[];
 }
+
+export type LetterheadPaperStyle = 
+  | 'vintage_parchment' 
+  | 'obsidian_gold' 
+  | 'clean_bond_white' 
+  | 'charred_oak' 
+  | 'speyside_cream' 
+  | 'royal_linen';
+
+export type LetterheadHeaderLayout = 
+  | 'split_crest_left' 
+  | 'centered_royal_crest' 
+  | 'modern_minimal_right' 
+  | 'classic_editorial' 
+  | 'dual_column_stamp';
+
+export type LetterheadDivider = 
+  | 'double_gold_filigree' 
+  | 'minimal_amber_line' 
+  | 'distiller_emblem_divider' 
+  | 'embossed_stamp_ribbon' 
+  | 'none';
+
+export type LetterheadWatermark = 
+  | 'none' 
+  | 'distillery_crest' 
+  | 'authenticated_seal' 
+  | 'cask_barrel_stamp' 
+  | 'bonded_release' 
+  | 'custom_text';
+
+export type LetterheadWaxSealColor = 
+  | 'ruby_crimson' 
+  | 'antique_gold' 
+  | 'obsidian_black' 
+  | 'emerald_green' 
+  | 'amber_bronze';
+
+export type LetterheadAccentColor = 
+  | 'amber' 
+  | 'gold' 
+  | 'copper' 
+  | 'emerald' 
+  | 'ruby' 
+  | 'slate';
+
+export interface LetterheadTemplate {
+  id: string;
+  name: string;
+  category: 'certificate' | 'dispatch' | 'invitation' | 'tasting_notes' | 'corporate' | 'general';
+  description: string;
+  isDefault: boolean;
+  paperStyle: LetterheadPaperStyle;
+  headerLayout: LetterheadHeaderLayout;
+  distilleryName: string;
+  tagline: string;
+  heritageYear: string;
+  crestIcon: string;
+  customLogoUrl?: string;
+  showRoyalWarrant: boolean;
+  royalWarrantText?: string;
+  bondHouseRegistration: string;
+  taxExciseLicense: string;
+  contactAddress: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactWebsite: string;
+  headerDivider: LetterheadDivider;
+  watermarkType: LetterheadWatermark;
+  watermarkText?: string;
+  watermarkOpacity: number;
+  watermarkRotation: number;
+  showWaxSeal: boolean;
+  waxSealText: string;
+  waxSealColor: LetterheadWaxSealColor;
+  showSignatureBlock: boolean;
+  signatoryName: string;
+  signatoryTitle: string;
+  signatorySignatureFont?: 'signature_1' | 'signature_2' | 'signature_3' | 'classic_serif';
+  showCoSignatory?: boolean;
+  coSignatoryName?: string;
+  coSignatoryTitle?: string;
+  showSecurityQrHash: boolean;
+  securityHashPrefix: string;
+  legalDisclaimer: string;
+  accentColor: LetterheadAccentColor;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LetterheadDocumentStatus = 'draft' | 'finalized' | 'issued' | 'archived';
+
+export interface LetterheadDocument {
+  id: string;
+  title: string;
+  templateId: string;
+  referenceNumber: string;
+  documentDate: string;
+  recipientName: string;
+  recipientTitle?: string;
+  recipientCompany?: string;
+  recipientAddress?: string;
+  subject: string;
+  contentHtml: string;
+  contentPlainText?: string;
+  status: LetterheadDocumentStatus;
+  mergeData?: Record<string, string>;
+  customSignatoryName?: string;
+  customSignatoryTitle?: string;
+  showWaxSealOverride?: boolean;
+  showSignatureOverride?: boolean;
+  securityVerificationCode?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}

@@ -67,6 +67,19 @@ service cloud.firestore {
              data.status is string;
     }
 
+    function isValidLetterhead(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 250 &&
+             data.distilleryName is string && data.distilleryName.size() > 0 &&
+             data.paperStyle is string && data.headerLayout is string;
+    }
+
+    function isValidLetterheadDocument(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 300 &&
+             data.templateId is string && data.templateId.size() > 0 &&
+             data.recipientName is string && data.recipientName.size() > 0 &&
+             data.status is string;
+    }
+
     // 1. Products Catalog
     match /products/{productId} {
       allow read: if true;
@@ -133,6 +146,20 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isValidId(entryId) && isValidBallotEntry(request.resource.data);
       allow delete: if isValidId(entryId);
+    }
+
+    // 10. Letterhead Templates
+    match /letterheads/{letterheadId} {
+      allow read: if true;
+      allow create, update: if isValidId(letterheadId) && isValidLetterhead(request.resource.data);
+      allow delete: if isValidId(letterheadId);
+    }
+
+    // 11. Letterhead Documents & Certificates
+    match /letterhead_documents/{docId} {
+      allow read: if true;
+      allow create, update: if isValidId(docId) && isValidLetterheadDocument(request.resource.data);
+      allow delete: if isValidId(docId);
     }
   }
 }

@@ -25,7 +25,9 @@ import {
   BallotEntry,
   BallotStatus,
   BallotEntryStatus,
-  AppTab
+  AppTab,
+  LetterheadTemplate,
+  LetterheadDocument
 } from '../types';
 import {
   initialProducts,
@@ -44,6 +46,10 @@ import {
   initialBallotAllocations,
   initialBallotEntries
 } from '../data/initialData';
+import {
+  initialLetterheadTemplates,
+  initialLetterheadDocuments
+} from '../data/initialLetterheadData';
 
 export const normalizeHeaderConfig = (incoming?: Partial<HeaderCustomizationConfig> | null): HeaderCustomizationConfig => {
   const base = initialHeaderConfig;
@@ -218,7 +224,13 @@ import {
   saveCloudBallotEntry,
   updateCloudBallotEntry,
   deleteCloudBallotEntry,
-  subscribeToCloudBallotEntries
+  subscribeToCloudBallotEntries,
+  saveCloudLetterhead,
+  deleteCloudLetterhead,
+  subscribeToCloudLetterheads,
+  saveCloudLetterheadDocument,
+  deleteCloudLetterheadDocument,
+  subscribeToCloudLetterheadDocuments
 } from '../lib/firebase';
 
 export type { AppTab };
@@ -364,6 +376,16 @@ interface StoreContextType {
   addProductReview: (review: Omit<ProductReview, 'id' | 'createdAt'>) => Promise<ProductReview>;
   deleteProductReview: (reviewId: string) => Promise<void>;
   voteReviewHelpful: (reviewId: string) => Promise<void>;
+
+  // Letterhead Management & Document Composer (Cloud CRUD)
+  letterheadTemplates: LetterheadTemplate[];
+  letterheadDocuments: LetterheadDocument[];
+  saveLetterheadTemplate: (template: LetterheadTemplate) => Promise<void>;
+  deleteLetterheadTemplate: (templateId: string) => Promise<void>;
+  setDefaultLetterheadTemplate: (templateId: string) => Promise<void>;
+  saveLetterheadDocument: (document: LetterheadDocument) => Promise<void>;
+  deleteLetterheadDocument: (documentId: string) => Promise<void>;
+  getLetterheadTemplate: (templateId: string) => LetterheadTemplate | undefined;
 
   // Reset & Re-seed demo data
   resetAllData: () => void;
@@ -538,6 +560,24 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
+  const [letterheadTemplates, setLetterheadTemplates] = useState<LetterheadTemplate[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_letterheads`);
+      return saved ? JSON.parse(saved) : initialLetterheadTemplates;
+    } catch {
+      return initialLetterheadTemplates;
+    }
+  });
+
+  const [letterheadDocuments, setLetterheadDocuments] = useState<LetterheadDocument[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_letterhead_docs`);
+      return saved ? JSON.parse(saved) : initialLetterheadDocuments;
+    } catch {
+      return initialLetterheadDocuments;
+    }
+  });
+
   const [activeBallotModal, setActiveBallotModal] = useState<BallotAllocation | null>(null);
 
   // Customer Session & Login State
@@ -637,6 +677,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_ballot_entries`, JSON.stringify(ballotEntries)); } catch (_) {}
   }, [ballotEntries]);
 
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_letterheads`, JSON.stringify(letterheadTemplates)); } catch (_) {}
+  }, [letterheadTemplates]);
+
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_letterhead_docs`, JSON.stringify(letterheadDocuments)); } catch (_) {}
+  }, [letterheadDocuments]);
+
   // ==========================================
   // REAL-TIME FIRESTORE SUBSCRIPTIONS & SYNC
   // ==========================================
@@ -650,6 +698,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let unsubReviews: () => void = () => {};
     let unsubBallotAllocations: () => void = () => {};
     let unsubBallotEntries: () => void = () => {};
+    let unsubLetterheads: () => void = () => {};
+    let unsubLetterheadDocs: () => void = () => {};
 
     let hasReceivedInitialProducts = false;
 
@@ -677,7 +727,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               customer: initialCustomer,
               reviews: initialReviews,
               ballotAllocations: initialBallotAllocations,
-              ballotEntries: initialBallotEntries
+              ballotEntries: initialBallotEntries,
+              letterheads: initialLetterheadTemplates,
+              letterheadDocuments: initialLetterheadDocuments
             }).catch(e => console.warn('Cloud seed notice:', e));
           }
           hasReceivedInitialProducts = true;
@@ -758,6 +810,24 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           }
         });
 
+        // 10. Letterhead Templates Listener
+        unsubLetterheads = subscribeToCloudLetterheads((cloudLetterheads) => {
+          if (cloudLetterheads.length > 0) {
+            setLetterheadTemplates(cloudLetterheads);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
+        // 11. Letterhead Documents Listener
+        unsubLetterheadDocs = subscribeToCloudLetterheadDocuments((cloudDocs) => {
+          if (cloudDocs.length > 0) {
+            setLetterheadDocuments(cloudDocs);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
         setCloudSyncStatus('connected');
       } catch (err) {
         console.warn('Firebase init error, running in resilient fallback mode:', err);
@@ -777,6 +847,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubReviews();
       unsubBallotAllocations();
       unsubBallotEntries();
+      unsubLetterheads();
+      unsubLetterheadDocs();
     };
   }, []);
 
@@ -797,7 +869,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         footerConfig,
         reviews,
         ballotAllocations,
-        ballotEntries
+        ballotEntries,
+        letterheads: letterheadTemplates,
+        letterheadDocuments: letterheadDocuments
       });
       setCloudSyncStatus('connected');
       setLastSyncedAt(new Date());
@@ -807,7 +881,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } finally {
       setIsCloudSeeding(false);
     }
-  }, [products, inventoryLots, orders, blogPosts, homeContent, aboutContent, adminSettings, customer, headerConfig, footerConfig, reviews]);
+  }, [products, inventoryLots, orders, blogPosts, homeContent, aboutContent, adminSettings, customer, headerConfig, footerConfig, reviews, ballotAllocations, ballotEntries, letterheadTemplates, letterheadDocuments]);
 
   const uploadMedia = useCallback(async (
     fileOrDataUri: File | string,
@@ -1790,6 +1864,68 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await deleteCloudBallotAllocation(allocationId);
   };
 
+  // Letterhead Management Helpers
+  const saveLetterheadTemplate = async (template: LetterheadTemplate): Promise<void> => {
+    setLetterheadTemplates(prev => {
+      let updatedList = [...prev];
+      if (template.isDefault) {
+        updatedList = updatedList.map(t => ({ ...t, isDefault: t.id === template.id }));
+      }
+      const idx = updatedList.findIndex(t => t.id === template.id);
+      if (idx >= 0) {
+        updatedList[idx] = template;
+      } else {
+        updatedList.push(template);
+      }
+      return updatedList;
+    });
+    await saveCloudLetterhead(template);
+  };
+
+  const deleteLetterheadTemplate = async (templateId: string): Promise<void> => {
+    setLetterheadTemplates(prev => prev.filter(t => t.id !== templateId));
+    await deleteCloudLetterhead(templateId);
+  };
+
+  const setDefaultLetterheadTemplate = async (templateId: string): Promise<void> => {
+    let targetTemplate: LetterheadTemplate | null = null;
+    setLetterheadTemplates(prev => {
+      return prev.map(t => {
+        const isDef = t.id === templateId;
+        const updated = { ...t, isDefault: isDef };
+        if (isDef) targetTemplate = updated;
+        return updated;
+      });
+    });
+    if (targetTemplate) {
+      await saveCloudLetterhead(targetTemplate);
+    }
+  };
+
+  const saveLetterheadDocument = async (document: LetterheadDocument): Promise<void> => {
+    setLetterheadDocuments(prev => {
+      const idx = prev.findIndex(d => d.id === document.id);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx] = document;
+        return updated;
+      }
+      return [document, ...prev];
+    });
+    await saveCloudLetterheadDocument(document);
+  };
+
+  const deleteLetterheadDocument = async (documentId: string): Promise<void> => {
+    setLetterheadDocuments(prev => prev.filter(d => d.id !== documentId));
+    await deleteCloudLetterheadDocument(documentId);
+  };
+
+  const getLetterheadTemplate = useCallback((templateId: string): LetterheadTemplate | undefined => {
+    return letterheadTemplates.find(t => t.id === templateId) ||
+           letterheadTemplates.find(t => t.isDefault) ||
+           letterheadTemplates[0];
+  }, [letterheadTemplates]);
+
   const resetAllData = () => {
     setProducts(initialProducts);
     setInventoryLots(initialInventoryLots);
@@ -1805,6 +1941,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setReviews(initialReviews);
     setBallotAllocations(initialBallotAllocations);
     setBallotEntries(initialBallotEntries);
+    setLetterheadTemplates(initialLetterheadTemplates);
+    setLetterheadDocuments(initialLetterheadDocuments);
     setCart([]);
     try { localStorage.clear(); } catch (_) {}
     // Reseed cloud
@@ -1913,6 +2051,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         addCustomerAddress,
         deleteCustomerAddress,
         setDefaultAddress,
+        letterheadTemplates,
+        letterheadDocuments,
+        saveLetterheadTemplate,
+        deleteLetterheadTemplate,
+        setDefaultLetterheadTemplate,
+        saveLetterheadDocument,
+        deleteLetterheadDocument,
+        getLetterheadTemplate,
         resetAllData,
         resetToDefaultData: resetAllData
       }}

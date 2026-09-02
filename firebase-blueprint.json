@@ -190,6 +190,85 @@
         "registeredAt": { "type": "string" }
       },
       "required": ["id", "allocationId", "userName", "userEmail", "bottlesRequested", "status"]
+    },
+    "letterheads": {
+      "title": "Distillery Letterhead Templates",
+      "description": "Customizable letterhead templates, luxury parchment styles, seals, watermarks, and crests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "isDefault": { "type": "boolean" },
+        "paperStyle": { "type": "string" },
+        "headerLayout": { "type": "string" },
+        "distilleryName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "heritageYear": { "type": "string" },
+        "crestIcon": { "type": "string" },
+        "customLogoUrl": { "type": "string" },
+        "showRoyalWarrant": { "type": "boolean" },
+        "royalWarrantText": { "type": "string" },
+        "bondHouseRegistration": { "type": "string" },
+        "taxExciseLicense": { "type": "string" },
+        "contactAddress": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "contactWebsite": { "type": "string" },
+        "headerDivider": { "type": "string" },
+        "watermarkType": { "type": "string" },
+        "watermarkText": { "type": "string" },
+        "watermarkOpacity": { "type": "number" },
+        "watermarkRotation": { "type": "number" },
+        "showWaxSeal": { "type": "boolean" },
+        "waxSealText": { "type": "string" },
+        "waxSealColor": { "type": "string" },
+        "showSignatureBlock": { "type": "boolean" },
+        "signatoryName": { "type": "string" },
+        "signatoryTitle": { "type": "string" },
+        "signatorySignatureFont": { "type": "string" },
+        "showCoSignatory": { "type": "boolean" },
+        "coSignatoryName": { "type": "string" },
+        "coSignatoryTitle": { "type": "string" },
+        "showSecurityQrHash": { "type": "boolean" },
+        "securityHashPrefix": { "type": "string" },
+        "legalDisclaimer": { "type": "string" },
+        "accentColor": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "distilleryName", "paperStyle", "headerLayout"]
+    },
+    "letterhead_documents": {
+      "title": "Composed Distillery Documents & Letters",
+      "description": "Composed certificates, release notes, VIP invitations, and tasting ledger documents",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "templateId": { "type": "string" },
+        "referenceNumber": { "type": "string" },
+        "documentDate": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "recipientTitle": { "type": "string" },
+        "recipientCompany": { "type": "string" },
+        "recipientAddress": { "type": "string" },
+        "subject": { "type": "string" },
+        "contentHtml": { "type": "string" },
+        "contentPlainText": { "type": "string" },
+        "status": { "type": "string" },
+        "mergeData": { "type": "object" },
+        "customSignatoryName": { "type": "string" },
+        "customSignatoryTitle": { "type": "string" },
+        "showWaxSealOverride": { "type": "boolean" },
+        "showSignatureOverride": { "type": "boolean" },
+        "securityVerificationCode": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "title", "templateId", "recipientName", "contentHtml", "status"]
     }
   },
   "firestore": {
@@ -228,6 +307,14 @@
     "/ballot_entries/{entryId}": {
       "schema": "ballot_entries",
       "description": "Collector ballot lottery registration entries"
+    },
+    "/letterheads/{letterheadId}": {
+      "schema": "letterheads",
+      "description": "Distillery letterhead templates"
+    },
+    "/letterhead_documents/{docId}": {
+      "schema": "letterhead_documents",
+      "description": "Composed letterhead documents and issued certificates"
     }
   }
 }

@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { 
   initializeFirestore,
   getFirestore, 
+  setLogLevel,
   collection, 
   doc, 
   setDoc, 
@@ -33,13 +34,22 @@ import {
   BottomNavbarCustomizationConfig,
   ProductReview,
   BallotAllocation,
-  BallotEntry
+  BallotEntry,
+  LetterheadTemplate,
+  LetterheadDocument
 } from '../types';
+
+// Silence internal Firestore connection logs and transient retry warnings
+try {
+  setLogLevel('silent');
+} catch (e) {
+  // Ignore if already configured
+}
 
 // Initialize Firebase App
 export const app = !getApps().length ? initializeApp(firebaseConfigData) : getApp();
 
-// Initialize Firestore with auto-detect long polling and specific database ID for high-reliability in sandboxes
+// Initialize Firestore with specific database ID and auto-detect long polling
 const databaseId = firebaseConfigData.firestoreDatabaseId && firebaseConfigData.firestoreDatabaseId !== '(default)'
   ? firebaseConfigData.firestoreDatabaseId
   : undefined;
@@ -144,7 +154,9 @@ export const COLLECTIONS = {
   CUSTOMERS: 'customers',
   REVIEWS: 'reviews',
   BALLOT_ALLOCATIONS: 'ballot_allocations',
-  BALLOT_ENTRIES: 'ballot_entries'
+  BALLOT_ENTRIES: 'ballot_entries',
+  LETTERHEADS: 'letterheads',
+  LETTERHEAD_DOCUMENTS: 'letterhead_documents'
 } as const;
 
 // Storage helper: Upload Image (File or Data URL) to Cloud Storage with fallback
@@ -591,6 +603,94 @@ export const subscribeToCloudBallotEntries = (callback: (entries: BallotEntry[])
   });
 };
 
+// --- LETTERHEAD TEMPLATES ---
+export const saveCloudLetterhead = async (letterhead: LetterheadTemplate): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.LETTERHEADS, letterhead.id);
+    await setDoc(docRef, {
+      ...letterhead,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.LETTERHEADS}/${letterhead.id}`);
+    throw err;
+  }
+};
+
+export const deleteCloudLetterhead = async (letterheadId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.LETTERHEADS, letterheadId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.LETTERHEADS}/${letterheadId}`);
+    throw err;
+  }
+};
+
+export const subscribeToCloudLetterheads = (callback: (letterheads: LetterheadTemplate[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.LETTERHEADS));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: LetterheadTemplate[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as LetterheadTemplate);
+      });
+      list.sort((a, b) => {
+        if (a.isDefault) return -1;
+        if (b.isDefault) return 1;
+        return a.name.localeCompare(b.name);
+      });
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.LETTERHEADS);
+  });
+};
+
+// --- LETTERHEAD DOCUMENTS & CERTIFICATES ---
+export const saveCloudLetterheadDocument = async (document: LetterheadDocument): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.LETTERHEAD_DOCUMENTS, document.id);
+    await setDoc(docRef, {
+      ...document,
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.LETTERHEAD_DOCUMENTS}/${document.id}`);
+    throw err;
+  }
+};
+
+export const deleteCloudLetterheadDocument = async (docId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.LETTERHEAD_DOCUMENTS, docId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.LETTERHEAD_DOCUMENTS}/${docId}`);
+    throw err;
+  }
+};
+
+export const subscribeToCloudLetterheadDocuments = (callback: (documents: LetterheadDocument[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.LETTERHEAD_DOCUMENTS));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: LetterheadDocument[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as LetterheadDocument);
+      });
+      list.sort((a, b) => new Date(b.updatedAt || b.documentDate).getTime() - new Date(a.updatedAt || a.documentDate).getTime());
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.LETTERHEAD_DOCUMENTS);
+  });
+};
+
 // --- SEEDING & CLOUD SYNC BOOTSTRAPPER ---
 export const seedInitialCloudDatabase = async (initialData: {
   products: SpiritProduct[];
@@ -606,6 +706,8 @@ export const seedInitialCloudDatabase = async (initialData: {
   reviews?: ProductReview[];
   ballotAllocations?: BallotAllocation[];
   ballotEntries?: BallotEntry[];
+  letterheads?: LetterheadTemplate[];
+  letterheadDocuments?: LetterheadDocument[];
 }): Promise<{ success: boolean; seededCount: number }> => {
   try {
     let seededCount = 0;
@@ -692,6 +794,24 @@ export const seedInitialCloudDatabase = async (initialData: {
       for (const entry of initialData.ballotEntries) {
         const eRef = doc(db, COLLECTIONS.BALLOT_ENTRIES, entry.id);
         batch.set(eRef, { ...entry, updatedAt: new Date().toISOString() }, { merge: true });
+        seededCount++;
+      }
+    }
+
+    // 10. Letterhead Templates
+    if (initialData.letterheads && initialData.letterheads.length > 0) {
+      for (const letterhead of initialData.letterheads) {
+        const lRef = doc(db, COLLECTIONS.LETTERHEADS, letterhead.id);
+        batch.set(lRef, { ...letterhead, updatedAt: new Date().toISOString() }, { merge: true });
+        seededCount++;
+      }
+    }
+
+    // 11. Letterhead Documents
+    if (initialData.letterheadDocuments && initialData.letterheadDocuments.length > 0) {
+      for (const lDoc of initialData.letterheadDocuments) {
+        const ldRef = doc(db, COLLECTIONS.LETTERHEAD_DOCUMENTS, lDoc.id);
+        batch.set(ldRef, { ...lDoc, updatedAt: new Date().toISOString() }, { merge: true });
         seededCount++;
       }
     }
