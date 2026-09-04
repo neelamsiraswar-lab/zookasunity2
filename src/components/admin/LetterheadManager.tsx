@@ -219,14 +219,32 @@ export const LetterheadManager: React.FC = () => {
     }, 4000);
   };
 
-  // Sync editor innerHTML when activeDoc changes in visual mode
+  // Track last synced HTML and active document ID to prevent cursor jumps and RTL inversion during typing
+  const lastHtmlRef = useRef<string>(activeDoc.contentHtml);
+  const lastDocIdRef = useRef<string>(activeDoc.id);
+
+  // Sync editor innerHTML ONLY when switching documents, toggling from code mode, or external load
   useEffect(() => {
     if (editorRef.current && editorMode === 'visual') {
-      if (editorRef.current.innerHTML !== activeDoc.contentHtml) {
+      const isDocChanged = lastDocIdRef.current !== activeDoc.id;
+      if (isDocChanged) {
+        lastDocIdRef.current = activeDoc.id;
         editorRef.current.innerHTML = activeDoc.contentHtml;
+        lastHtmlRef.current = activeDoc.contentHtml;
+        return;
+      }
+
+      // If switched from code mode or updated externally (not from user typing)
+      if (lastHtmlRef.current !== activeDoc.contentHtml) {
+        editorRef.current.innerHTML = activeDoc.contentHtml;
+        lastHtmlRef.current = activeDoc.contentHtml;
+      } else if (!editorRef.current.innerHTML && activeDoc.contentHtml) {
+        // Initial populate if DOM element is empty
+        editorRef.current.innerHTML = activeDoc.contentHtml;
+        lastHtmlRef.current = activeDoc.contentHtml;
       }
     }
-  }, [activeDoc.id, editorMode]);
+  }, [activeDoc.id, editorMode, activeDoc.contentHtml]);
 
   // Manage print classes on document.body when letterhead preview modal is active
   useEffect(() => {
@@ -256,6 +274,7 @@ export const LetterheadManager: React.FC = () => {
   const handleEditorChange = () => {
     if (editorRef.current) {
       const html = editorRef.current.innerHTML;
+      lastHtmlRef.current = html;
       setActiveDoc(prev => ({
         ...prev,
         contentHtml: html,
@@ -271,9 +290,11 @@ export const LetterheadManager: React.FC = () => {
       document.execCommand('insertText', false, `{{${token}}}`);
       handleEditorChange();
     } else {
+      const updated = activeDoc.contentHtml + ` {{${token}}} `;
+      lastHtmlRef.current = updated;
       setActiveDoc(prev => ({
         ...prev,
-        contentHtml: prev.contentHtml + ` {{${token}}} `,
+        contentHtml: updated,
         updatedAt: new Date().toISOString()
       }));
     }
@@ -1497,23 +1518,34 @@ export const LetterheadManager: React.FC = () => {
                     <div
                       ref={editorRef}
                       contentEditable
+                      suppressContentEditableWarning
+                      dir="ltr"
                       onInput={handleEditorChange}
-                      className="outline-none focus:ring-1 focus:ring-amber-500/30 p-2 rounded prose max-w-none text-sm md:text-base leading-relaxed"
-                      style={{ color: paperTheme.text }}
-                      dangerouslySetInnerHTML={{ __html: activeDoc.contentHtml }}
+                      className="outline-none focus:ring-1 focus:ring-amber-500/30 p-3 rounded prose max-w-none text-sm md:text-base leading-relaxed text-left"
+                      style={{
+                        color: paperTheme.text,
+                        direction: 'ltr',
+                        textAlign: 'left',
+                        unicodeBidi: 'normal',
+                        minHeight: '360px'
+                      }}
                     />
                   ) : (
                     <textarea
                       value={activeDoc.contentHtml}
-                      onChange={e =>
+                      dir="ltr"
+                      onChange={e => {
+                        const val = e.target.value;
+                        lastHtmlRef.current = val;
                         setActiveDoc(prev => ({
                           ...prev,
-                          contentHtml: e.target.value,
+                          contentHtml: val,
                           updatedAt: new Date().toISOString()
-                        }))
-                      }
+                        }));
+                      }}
                       rows={16}
-                      className="w-full p-4 bg-stone-900 text-amber-300 font-mono text-xs border border-amber-900/40 rounded-lg focus:outline-none"
+                      className="w-full p-4 bg-stone-900 text-amber-300 font-mono text-xs border border-amber-900/40 rounded-lg focus:outline-none text-left"
+                      style={{ direction: 'ltr', textAlign: 'left' }}
                     />
                   )}
                 </div>
