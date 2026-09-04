@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useStore } from '../../context/StoreContext';
 import {
   LetterheadTemplate,
@@ -226,6 +227,22 @@ export const LetterheadManager: React.FC = () => {
       }
     }
   }, [activeDoc.id, editorMode]);
+
+  // Manage print classes on document.body when letterhead preview modal is active
+  useEffect(() => {
+    if (!printPreviewModalOpen) return;
+    document.body.classList.add('has-active-print-job', 'printing-letterhead');
+    
+    const handleAfterPrint = () => {
+      document.body.classList.remove('has-active-print-job', 'printing-letterhead');
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+
+    return () => {
+      document.body.classList.remove('has-active-print-job', 'printing-letterhead');
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, [printPreviewModalOpen]);
 
   // Execute formatting command in visual editor
   const formatText = (command: string, value: string | undefined = undefined) => {
@@ -1843,242 +1860,286 @@ export const LetterheadManager: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 2: PRINT & PDF EXPORT MODAL */}
+      {/* MODAL 2: PRINT & PDF EXPORT MODAL WITH PRINT PORTAL ISOLATION */}
       {/* ========================================================================= */}
-      {printPreviewModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto">
-          <div className="bg-stone-900 border border-amber-900/80 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Topbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 border-b border-stone-800 bg-stone-950">
-              <div className="flex items-center gap-3">
-                <Printer className="w-5 h-5 text-amber-400 shrink-0" />
-                <div>
-                  <h3 className="font-serif text-sm sm:text-base text-amber-100 font-bold">
-                    Official Document Print & PDF Preview
-                  </h3>
-                  <div className="text-xs text-stone-400">
-                    {activeDoc.title} • Ref: {activeDoc.referenceNumber}
-                  </div>
-                </div>
-              </div>
-
-              {/* Zoom & Print Buttons */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                <div className="flex items-center bg-stone-900 border border-stone-800 rounded-lg p-0.5 text-xs text-stone-300">
-                  <button
-                    onClick={() => setPreviewZoom(75)}
-                    className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 75 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
-                  >
-                    75%
-                  </button>
-                  <button
-                    onClick={() => setPreviewZoom(100)}
-                    className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 100 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
-                  >
-                    100%
-                  </button>
-                  <button
-                    onClick={() => setPreviewZoom(125)}
-                    className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 125 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
-                  >
-                    125%
-                  </button>
-                </div>
-
-                <button
-                  onClick={() => window.print()}
-                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow min-h-[38px]"
-                >
-                  <Printer className="w-4 h-4 shrink-0" />
-                  <span>Print / PDF</span>
-                </button>
-
-                <button
-                  onClick={() => setPrintPreviewModalOpen(false)}
-                  className="p-2 text-stone-400 hover:text-stone-100 rounded-lg text-lg cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+      {(() => {
+        const renderLetterheadDocumentInner = (isPrint: boolean) => (
+          <>
+            {/* Official Top-Right Orange Geometric Polygon Accent */}
+            <div className="absolute top-0 right-0 w-44 sm:w-60 h-24 sm:h-32 pointer-events-none z-10">
+              <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                <polygon points="65,0 200,0 200,85 130,85" fill="#E67E22" />
+                <polygon points="115,0 200,0 200,50 155,50" fill="#F39C12" opacity="0.9" />
+                <polygon points="60,0 67,0 132,85 125,85" fill="#D35400" />
+              </svg>
             </div>
 
-            {/* Printable Stationery Container */}
-            <div className="p-8 overflow-y-auto bg-stone-950 flex justify-center flex-1">
+            {/* Subtle Official Watermark Layer */}
+            <div
+              className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
+              style={{ opacity: 0.045 }}
+            >
+              <ZookasOfficialCrest size={380} variant="watermark" showText={true} />
+            </div>
+
+            {/* Main Content Area */}
+            <div className="relative z-10 flex-1 flex flex-col">
+              {/* Top-Left GSTIN */}
+              {(companyDetails?.showGstOnLetterhead ?? true) && (
+                <div className="text-xs font-black tracking-tight text-black mb-1.5 flex items-center gap-1 font-mono">
+                  <span>GSTIN:</span>
+                  <span className="font-extrabold">{companyDetails?.gstin || "19AACCZ7001P1ZU"}</span>
+                </div>
+              )}
+
+              {/* Header Row: Crest on Left, Centered Company Details */}
+              <header className="mb-2 relative z-10">
+                <div className="flex flex-row items-center gap-4 text-left">
+                  {/* Left Crest / Custom Logo */}
+                  <div className="shrink-0 flex items-center justify-center gap-2">
+                    {companyDetails?.logoType === 'both' && (
+                      <ZookasOfficialCrest size={70} variant="gold" showText={false} />
+                    )}
+                    {((companyDetails?.logoType === 'custom_image' || companyDetails?.logoType === 'both' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
+                      <img
+                        src={companyDetails.logoUrl}
+                        alt="Company Logo"
+                        referrerPolicy="no-referrer"
+                        className="object-contain max-h-24"
+                        style={{ width: `${Math.min(companyDetails.logoWidth || 100, 150)}px` }}
+                      />
+                    ) : (
+                      <ZookasOfficialCrest size={90} variant="gold" showText={true} />
+                    )}
+                  </div>
+
+                  {/* Right/Center Company Details */}
+                  <div className="flex-1 text-center pr-8">
+                    <h1 className="text-lg sm:text-2xl font-black uppercase text-black leading-tight tracking-wide font-sans m-0">
+                      {companyDetails?.companyName || "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED"}
+                    </h1>
+
+                    {(companyDetails?.showAddressOnLetterhead ?? true) && (
+                      <p className="text-[11px] sm:text-xs text-stone-900 leading-snug mt-1 max-w-xl mx-auto font-sans font-medium">
+                        {companyDetails?.registeredAddress || "Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311"}
+                      </p>
+                    )}
+
+                    {(companyDetails?.showCinOnLetterhead ?? true) && (
+                      <p className="text-xs font-bold text-black mt-0.5 font-mono">
+                        CIN NO:-{companyDetails?.cin || "U73100WB2025PTC281568 / U46305WB2025PTC281568"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Official Golden/Amber Divider Bar */}
+                <div className="w-full h-1.5 bg-gradient-to-r from-amber-600 via-[#E67E22] to-amber-700 my-3 rounded-sm" />
+
+                {/* Registration No & Date Subheader */}
+                <div className="flex flex-row items-center justify-between text-xs sm:text-sm font-bold text-black pb-2 border-b border-stone-200">
+                  <div>
+                    Registration No :-{' '}
+                    <span className="font-mono font-semibold text-stone-800">
+                      {activeDoc.referenceNumber || 'ZUBD/2026/REG-001'}
+                    </span>
+                  </div>
+                  <div>
+                    Date:-{' '}
+                    <span className="font-semibold text-stone-800">
+                      {activeDoc.documentDate
+                        ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB')
+                        : new Date().toLocaleDateString('en-GB')}
+                    </span>
+                  </div>
+                </div>
+              </header>
+
+              {/* Recipient Information Bar */}
+              {activeDoc.recipientName && (
+                <div className="py-2.5 mb-3 border-b border-dashed border-stone-300 text-xs text-stone-800">
+                  <div className="font-bold text-stone-900 text-sm">{activeDoc.recipientName}</div>
+                  {activeDoc.recipientTitle && <div>{activeDoc.recipientTitle}</div>}
+                  {activeDoc.recipientCompany && <div className="font-medium">{activeDoc.recipientCompany}</div>}
+                  {activeDoc.recipientAddress && <div className="text-[11px] text-stone-600">{activeDoc.recipientAddress}</div>}
+                  {activeDoc.subject && <div className="mt-1.5 font-bold text-amber-900 italic">Subject: {activeDoc.subject}</div>}
+                </div>
+              )}
+
+              {/* Resolved Body Content */}
               <div
-                id="printable-letterhead-document"
-                className="w-full max-w-3xl shadow-2xl relative transition-transform origin-top overflow-hidden flex flex-col justify-between"
-                style={{
-                  transform: `scale(${previewZoom / 100})`,
-                  backgroundColor: paperTheme.bg,
-                  color: paperTheme.text,
-                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                  minHeight: '1050px',
-                  padding: '40px 48px 0px 48px',
-                  border: `2px solid ${paperTheme.border}`
+                className="relative z-10 leading-relaxed text-sm md:text-base space-y-3 flex-1"
+                dangerouslySetInnerHTML={{
+                  __html: resolveContentVariables(activeDoc.contentHtml, activeDoc, activeTemplate)
                 }}
-              >
-                {/* Official Top-Right Orange Geometric Polygon Accent */}
-                <div className="absolute top-0 right-0 w-44 sm:w-60 h-24 sm:h-32 pointer-events-none z-10">
-                  <svg viewBox="0 0 200 100" className="w-full h-full" preserveAspectRatio="none" fill="none">
-                    <polygon points="65,0 200,0 200,85 130,85" fill="#E67E22" />
-                    <polygon points="115,0 200,0 200,50 155,50" fill="#F39C12" opacity="0.9" />
-                    <polygon points="60,0 67,0 132,85 125,85" fill="#D35400" />
+              />
+
+              {/* Signatory Area */}
+              {activeTemplate.showSignatureBlock && (
+                <div className="mt-6 mb-4 flex justify-end">
+                  <div className="text-center min-w-[220px]">
+                    <div className="font-serif italic text-base font-bold mb-1 text-amber-900">
+                      {activeDoc.customSignatoryName || activeTemplate.signatoryName || "For ZOOKAS UNITY BLENDERS & DISTILLERS"}
+                    </div>
+                    <div className="w-40 h-px mx-auto mb-1 bg-stone-400" />
+                    <div className="text-xs font-bold uppercase tracking-wider text-stone-800">
+                      {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle || "Authorized Signatory"}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* --- OFFICIAL VIBRANT ORANGE GEOMETRIC RIBBON FOOTER --- */}
+            <footer
+              className={`relative z-10 mt-auto ${isPrint ? '' : '-mx-12 mt-6'}`}
+              style={isPrint ? { marginLeft: '-42px', marginRight: '-42px' } : undefined}
+            >
+              <div className="relative bg-[#E67E22] text-white py-3 px-10 overflow-hidden flex flex-row items-center justify-between gap-4 text-xs shadow-md">
+                {/* Contact Details */}
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-1 text-xs font-medium tracking-wide">
+                  {(companyDetails?.showContactOnLetterhead ?? true) && (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <Globe className="w-4 h-4 text-white shrink-0" />
+                        <span>{(companyDetails?.website || "www.zookasunityspirits.in").replace(/^https?:\/\//, '')}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Phone className="w-4 h-4 text-white shrink-0" />
+                        <span>{companyDetails?.phone || "9593712358"}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Mail className="w-4 h-4 text-white shrink-0" />
+                        <span>{companyDetails?.email || "zookasspirit123@gmail.com"}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Right Geometric Facets */}
+                <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-32 pointer-events-none">
+                  <svg viewBox="0 0 100 50" className="w-full h-full" preserveAspectRatio="none" fill="none">
+                    <polygon points="45,50 65,0 78,0 58,50" fill="#FFFFFF" />
+                    <polygon points="75,50 90,0 100,0 100,50" fill="#F39C12" />
                   </svg>
                 </div>
+              </div>
+            </footer>
+          </>
+        );
 
-                {/* Subtle Official Watermark Layer */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
-                  style={{ opacity: 0.045 }}
-                >
-                  <ZookasOfficialCrest size={380} variant="watermark" showText={true} />
-                </div>
+        const printRoot = typeof document !== 'undefined' ? document.getElementById('print-root') : null;
 
-                {/* Main Content Area */}
-                <div className="relative z-10 flex-1 flex flex-col">
-                  {/* Top-Left GSTIN */}
-                  {(companyDetails?.showGstOnLetterhead ?? true) && (
-                    <div className="text-xs font-black tracking-tight text-black mb-1.5 flex items-center gap-1 font-mono">
-                      <span>GSTIN:</span>
-                      <span className="font-extrabold">{companyDetails?.gstin || "19AACCZ7001P1ZU"}</span>
-                    </div>
-                  )}
+        const handlePrintLetterhead = () => {
+          document.body.classList.add('has-active-print-job', 'printing-letterhead');
+          window.print();
+          setTimeout(() => {
+            if (!printPreviewModalOpen) {
+              document.body.classList.remove('has-active-print-job', 'printing-letterhead');
+            }
+          }, 1500);
+        };
 
-                  {/* Header Row: Crest on Left, Centered Company Details */}
-                  <header className="mb-2 relative z-10">
-                    <div className="flex flex-row items-center gap-4 text-left">
-                      {/* Left Crest / Custom Logo */}
-                      <div className="shrink-0 flex items-center justify-center gap-2">
-                        {companyDetails?.logoType === 'both' && (
-                          <ZookasOfficialCrest size={70} variant="gold" showText={false} />
-                        )}
-                        {((companyDetails?.logoType === 'custom_image' || companyDetails?.logoType === 'both' || !companyDetails?.logoType)) && companyDetails?.logoUrl ? (
-                          <img
-                            src={companyDetails.logoUrl}
-                            alt="Company Logo"
-                            referrerPolicy="no-referrer"
-                            className="object-contain max-h-24"
-                            style={{ width: `${Math.min(companyDetails.logoWidth || 100, 150)}px` }}
-                          />
-                        ) : (
-                          <ZookasOfficialCrest size={90} variant="gold" showText={true} />
-                        )}
-                      </div>
+        return (
+          <>
+            {/* 1. Print Isolated Document via Portal directly into #print-root */}
+            {printPreviewModalOpen && printRoot && createPortal(
+              <div
+                id="print-isolated-letterhead-page"
+                className="print-letterhead-page"
+                style={{
+                  backgroundColor: paperTheme.bg || '#ffffff',
+                  color: paperTheme.text || '#000000',
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                }}
+              >
+                {renderLetterheadDocumentInner(true)}
+              </div>,
+              printRoot
+            )}
 
-                      {/* Right/Center Company Details */}
-                      <div className="flex-1 text-center pr-8">
-                        <h1 className="text-lg sm:text-2xl font-black uppercase text-black leading-tight tracking-wide font-sans m-0">
-                          {companyDetails?.companyName || "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED"}
-                        </h1>
-
-                        {(companyDetails?.showAddressOnLetterhead ?? true) && (
-                          <p className="text-[11px] sm:text-xs text-stone-900 leading-snug mt-1 max-w-xl mx-auto font-sans font-medium">
-                            {companyDetails?.registeredAddress || "Floor No.: 1ST FLOOR Building , S S TOWER, T N, MUKHERJEE ROAD LICHU BAGA, Dankuni, Hooghly, West Bengal, PIN Code: 712311"}
-                          </p>
-                        )}
-
-                        {(companyDetails?.showCinOnLetterhead ?? true) && (
-                          <p className="text-xs font-bold text-black mt-0.5 font-mono">
-                            CIN NO:-{companyDetails?.cin || "U73100WB2025PTC281568 / U46305WB2025PTC281568"}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Official Golden/Amber Divider Bar */}
-                    <div className="w-full h-1.5 bg-gradient-to-r from-amber-600 via-[#E67E22] to-amber-700 my-3 rounded-sm" />
-
-                    {/* Registration No & Date Subheader */}
-                    <div className="flex flex-row items-center justify-between text-xs sm:text-sm font-bold text-black pb-2 border-b border-stone-200">
+            {/* 2. Interactive Screen Preview Modal (Hidden in Print) */}
+            {printPreviewModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 overflow-y-auto print:hidden print-modal-chrome">
+                <div className="bg-stone-900 border border-amber-900/80 rounded-xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden print:hidden print-modal-chrome">
+                  {/* Modal Topbar */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 border-b border-stone-800 bg-stone-950 print:hidden print-modal-chrome">
+                    <div className="flex items-center gap-3">
+                      <Printer className="w-5 h-5 text-amber-400 shrink-0" />
                       <div>
-                        Registration No :-{' '}
-                        <span className="font-mono font-semibold text-stone-800">
-                          {activeDoc.referenceNumber || 'ZUBD/2026/REG-001'}
-                        </span>
-                      </div>
-                      <div>
-                        Date:-{' '}
-                        <span className="font-semibold text-stone-800">
-                          {activeDoc.documentDate
-                            ? new Date(activeDoc.documentDate).toLocaleDateString('en-GB')
-                            : new Date().toLocaleDateString('en-GB')}
-                        </span>
-                      </div>
-                    </div>
-                  </header>
-
-                  {/* Recipient Information Bar */}
-                  {activeDoc.recipientName && (
-                    <div className="py-3 mb-4 border-b border-dashed border-stone-300 text-xs text-stone-800">
-                      <div className="font-bold text-stone-900 text-sm">{activeDoc.recipientName}</div>
-                      {activeDoc.recipientTitle && <div>{activeDoc.recipientTitle}</div>}
-                      {activeDoc.recipientCompany && <div className="font-medium">{activeDoc.recipientCompany}</div>}
-                      {activeDoc.recipientAddress && <div className="text-[11px] text-stone-600">{activeDoc.recipientAddress}</div>}
-                      {activeDoc.subject && <div className="mt-2 font-bold text-amber-900 italic">Subject: {activeDoc.subject}</div>}
-                    </div>
-                  )}
-
-                  {/* Resolved Body Content */}
-                  <div
-                    className="relative z-10 leading-relaxed text-sm md:text-base space-y-4 flex-1"
-                    dangerouslySetInnerHTML={{
-                      __html: resolveContentVariables(activeDoc.contentHtml, activeDoc, activeTemplate)
-                    }}
-                  />
-
-                  {/* Signatory Area */}
-                  {activeTemplate.showSignatureBlock && (
-                    <div className="mt-8 mb-6 flex justify-end">
-                      <div className="text-center min-w-[220px]">
-                        <div className="font-serif italic text-base font-bold mb-1 text-amber-900">
-                          {activeDoc.customSignatoryName || activeTemplate.signatoryName || "For ZOOKAS UNITY BLENDERS & DISTILLERS"}
-                        </div>
-                        <div className="w-40 h-px mx-auto mb-1 bg-stone-400" />
-                        <div className="text-xs font-bold uppercase tracking-wider text-stone-800">
-                          {activeDoc.customSignatoryTitle || activeTemplate.signatoryTitle || "Authorized Signatory"}
+                        <h3 className="font-serif text-sm sm:text-base text-amber-100 font-bold">
+                          Official Document Print & PDF Preview
+                        </h3>
+                        <div className="text-xs text-stone-400">
+                          {activeDoc.title} • Ref: {activeDoc.referenceNumber}
                         </div>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* --- OFFICIAL VIBRANT ORANGE GEOMETRIC RIBBON FOOTER --- */}
-                <footer className="relative z-10 -mx-12 mt-6">
-                  <div className="relative bg-[#E67E22] text-white py-3 px-10 overflow-hidden flex flex-row items-center justify-between gap-4 text-xs shadow-md">
-                    {/* Contact Details */}
-                    <div className="flex flex-wrap items-center gap-x-8 gap-y-1 text-xs font-medium tracking-wide">
-                      {(companyDetails?.showContactOnLetterhead ?? true) && (
-                        <>
-                          <div className="flex items-center gap-1.5">
-                            <Globe className="w-4 h-4 text-white shrink-0" />
-                            <span>{(companyDetails?.website || "www.zookasunityspirits.in").replace(/^https?:\/\//, '')}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Phone className="w-4 h-4 text-white shrink-0" />
-                            <span>{companyDetails?.phone || "9593712358"}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Mail className="w-4 h-4 text-white shrink-0" />
-                            <span>{companyDetails?.email || "zookasspirit123@gmail.com"}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
+                    {/* Zoom & Print Buttons */}
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                      <div className="flex items-center bg-stone-900 border border-stone-800 rounded-lg p-0.5 text-xs text-stone-300">
+                        <button
+                          onClick={() => setPreviewZoom(75)}
+                          className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 75 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
+                        >
+                          75%
+                        </button>
+                        <button
+                          onClick={() => setPreviewZoom(100)}
+                          className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 100 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
+                        >
+                          100%
+                        </button>
+                        <button
+                          onClick={() => setPreviewZoom(125)}
+                          className={`px-2.5 py-1 rounded cursor-pointer ${previewZoom === 125 ? 'bg-amber-600 text-stone-950 font-bold' : ''}`}
+                        >
+                          125%
+                        </button>
+                      </div>
 
-                    {/* Right Geometric Facets */}
-                    <div className="hidden sm:block absolute right-0 top-0 bottom-0 w-32 pointer-events-none">
-                      <svg viewBox="0 0 100 50" className="w-full h-full" preserveAspectRatio="none" fill="none">
-                        <polygon points="45,50 65,0 78,0 58,50" fill="#FFFFFF" />
-                        <polygon points="75,50 90,0 100,0 100,50" fill="#F39C12" />
-                      </svg>
+                      <button
+                        onClick={handlePrintLetterhead}
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-amber-600 hover:bg-amber-500 text-stone-950 text-xs font-bold uppercase tracking-wider rounded-lg transition-colors cursor-pointer shadow min-h-[38px]"
+                      >
+                        <Printer className="w-4 h-4 shrink-0" />
+                        <span>Print / PDF</span>
+                      </button>
+
+                      <button
+                        onClick={() => setPrintPreviewModalOpen(false)}
+                        className="p-2 text-stone-400 hover:text-stone-100 rounded-lg text-lg cursor-pointer"
+                      >
+                        ✕
+                      </button>
                     </div>
                   </div>
-                </footer>
+
+                  {/* Screen Stationery Container */}
+                  <div className="p-8 overflow-y-auto bg-stone-950 flex justify-center flex-1">
+                    <div
+                      id="printable-letterhead-document"
+                      className="w-full max-w-3xl shadow-2xl relative transition-transform origin-top overflow-hidden flex flex-col justify-between"
+                      style={{
+                        transform: `scale(${previewZoom / 100})`,
+                        backgroundColor: paperTheme.bg,
+                        color: paperTheme.text,
+                        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                        minHeight: '1050px',
+                        padding: '40px 48px 0px 48px',
+                        border: `2px solid ${paperTheme.border}`
+                      }}
+                    >
+                      {renderLetterheadDocumentInner(false)}
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
+            )}
+          </>
+        );
+      })()}
     </div>
   );
 };

@@ -63,3 +63,120 @@
   animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* ==========================================================================
+   OFFICIAL PRINT ISOLATION SYSTEM
+   Guarantees 1-page clean documents for Letterhead & Invoices.
+   Eliminates popup windows, backdrops, modal controls, and multi-page background spill.
+   ========================================================================== */
+
+@media screen {
+  #print-root {
+    display: none !important;
+  }
+}
+
+@page {
+  size: A4 portrait;
+  margin: 0mm;
+}
+
+@media print {
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* When printing, completely hide the interactive application tree (#root) */
+  body.has-active-print-job #root,
+  body.printing-letterhead #root,
+  body.printing-invoice #root,
+  body:has(#print-root:not(:empty)) #root {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Render exclusively the dedicated print isolation root */
+  body.has-active-print-job #print-root,
+  body.printing-letterhead #print-root,
+  body.printing-invoice #print-root,
+  body:has(#print-root:not(:empty)) #print-root {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide all modal backdrops, topbars, buttons, close icons, zoom controls */
+  .print-modal-chrome,
+  .print-hide,
+  button,
+  [data-print-hide="true"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Strict 1-page A4 dimensions for Letterhead */
+  .print-letterhead-page {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    height: 296mm !important;
+    max-height: 296mm !important;
+    min-height: 296mm !important;
+    margin: 0 auto !important;
+    padding: 32px 42px 0px 42px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Strict 1-page dimensions for Invoice */
+  .print-invoice-page {
+    width: 100% !important;
+    max-width: 195mm !important;
+    margin: 0 auto !important;
+    padding: 18mm 16mm !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+    break-inside: avoid !important;
+  }
+}
+
+
