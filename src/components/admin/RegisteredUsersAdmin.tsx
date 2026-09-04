@@ -159,9 +159,14 @@ export const RegisteredUsersAdmin: React.FC = () => {
   const getUserOrders = (user: CustomerUser): Order[] => {
     const userEmail = user.email.toLowerCase();
     return orders.filter(
-      o => o.shippingAddress?.fullName?.toLowerCase() === user.name.toLowerCase() ||
+      o => (o.id !== 'ord-9921' && o.id !== 'ord-9840') && (
+           o.customerId === user.id ||
+           (o.customerEmail && o.customerEmail.toLowerCase() === userEmail) ||
+           (o.customerName && o.customerName.toLowerCase() === user.name.toLowerCase()) ||
+           o.shippingAddress?.fullName?.toLowerCase() === user.name.toLowerCase() ||
            o.payment?.transactionId?.includes(user.id) ||
            o.notes?.toLowerCase().includes(userEmail)
+      )
     );
   };
 

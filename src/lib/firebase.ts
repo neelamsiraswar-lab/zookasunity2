@@ -922,6 +922,7 @@ export const seedInitialCloudDatabase = async (initialData: {
 
     // 3. Orders
     for (const ord of initialData.orders) {
+      if (ord.id === 'ord-9921' || ord.id === 'ord-9840') continue;
       const oRef = doc(db, COLLECTIONS.ORDERS, ord.id);
       batch.set(oRef, { ...ord, updatedAt: new Date().toISOString() }, { merge: true });
       seededCount++;

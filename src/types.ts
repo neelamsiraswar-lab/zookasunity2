@@ -149,6 +149,9 @@ export interface Order {
   loyaltyPointsEarned: number;
   loyaltyPointsUsed: number;
   notes?: string;
+  customerId?: string;
+  customerEmail?: string;
+  customerName?: string;
 }
 
 export interface CustomerUser {

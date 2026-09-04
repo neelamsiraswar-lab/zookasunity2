@@ -272,7 +272,7 @@ export const CustomerAuthModal: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. arthur.sterling@casksociety.com"
+                      placeholder="e.g. patron@example.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-stone-950 border border-stone-700/80 rounded-xl text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
