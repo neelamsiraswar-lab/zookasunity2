@@ -509,6 +509,11 @@ export const initialCustomer: CustomerUser = {
   emailNotifications: true,
   smsNotifications: false,
   spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon', 'Artisanal Mezcal', 'High-Proof Ryes'],
+  authProvider: 'email',
+  isEmailVerified: true,
+  lastLoginAt: '2026-09-02T18:45:00Z',
+  accountStatus: 'vip',
+  adminNotes: 'Founding Collector. Priority ballot draw recipient for annual 25-Year single cask allocations.',
   addresses: [
     {
       id: 'addr-01',
@@ -550,6 +555,15 @@ export const demoCustomers: CustomerUser[] = [
     emailNotifications: true,
     smsNotifications: true,
     spiritPreferences: ['Botanical Gin', 'High-Proof Ryes', 'Cask Strength Bourbon'],
+    authProvider: 'google',
+    googleUid: '108492049182049182390',
+    googleEmail: 'elena.rostova@spiritsguild.org',
+    googleDisplayName: 'Elena Rostova',
+    googlePhotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    isEmailVerified: true,
+    lastLoginAt: '2026-09-03T11:20:15Z',
+    accountStatus: 'vip',
+    adminNotes: 'Spirits Guild sommelier. Frequent high-proof botanical gin purchaser.',
     addresses: [
       {
         id: 'addr-elena-01',
@@ -577,6 +591,11 @@ export const demoCustomers: CustomerUser[] = [
     emailNotifications: true,
     smsNotifications: false,
     spiritPreferences: ['Single Malt Whisky', 'Rare Peated Cask Releases', 'Artisanal Aged Rum'],
+    authProvider: 'email',
+    isEmailVerified: true,
+    lastLoginAt: '2026-08-30T14:10:00Z',
+    accountStatus: 'active',
+    adminNotes: 'Collector focusing on peated releases and rum cask finished whiskies.',
     addresses: [
       {
         id: 'addr-marcus-01',
@@ -587,6 +606,42 @@ export const demoCustomers: CustomerUser[] = [
         zipCode: '10017',
         country: 'United States',
         phone: '+1 (555) 671-3309',
+        isDefault: true
+      }
+    ]
+  },
+  {
+    id: 'cust-unity-9904',
+    name: 'Dr. Julian Croft',
+    email: 'j.croft@highlandmed.org',
+    phone: '+1 (555) 234-9871',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    loyaltyTier: 'Gold Cask',
+    loyaltyPoints: 1450,
+    totalSpent: 184500,
+    dateJoined: '2024-06-12',
+    emailNotifications: true,
+    smsNotifications: true,
+    spiritPreferences: ['Single Malt Whisky', 'Port Cask Finish', 'Cask Strength Bourbon'],
+    authProvider: 'google',
+    googleUid: '114829103948291039481',
+    googleEmail: 'j.croft@highlandmed.org',
+    googleDisplayName: 'Dr. Julian Croft',
+    googlePhotoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    isEmailVerified: true,
+    lastLoginAt: '2026-09-01T09:15:22Z',
+    accountStatus: 'active',
+    adminNotes: 'Enrolled in private cellar reserve club. Pre-ordered Cask 2008 allocation.',
+    addresses: [
+      {
+        id: 'addr-julian-01',
+        fullName: 'Dr. Julian Croft',
+        street: '142 Queen Anne Hill Court',
+        city: 'Boston',
+        state: 'MA',
+        zipCode: '02116',
+        country: 'United States',
+        phone: '+1 (555) 234-9871',
         isDefault: true
       }
     ]

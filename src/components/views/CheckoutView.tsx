@@ -472,7 +472,7 @@ export const CheckoutView: React.FC = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => openAuthModal('demo')}
+              onClick={() => openAuthModal('login')}
               className="px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-lg transition cursor-pointer"
             >
               Switch Account
@@ -508,10 +508,10 @@ export const CheckoutView: React.FC = () => {
               Sign In
             </button>
             <button
-              onClick={() => openAuthModal('demo')}
+              onClick={() => openAuthModal('register')}
               className="px-3 py-2 bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 rounded-xl transition cursor-pointer"
             >
-              1-Click Demo Logins
+              Register
             </button>
           </div>
         </div>

@@ -18,7 +18,6 @@ import {
   Sparkles,
   LogOut,
   LogIn,
-  Flame,
   ArrowRight,
   Ticket,
   Crown,
@@ -32,8 +31,6 @@ export const AccountView: React.FC = () => {
     isCustomerLoggedIn,
     openAuthModal,
     logoutCustomer,
-    switchCustomerAccount,
-    demoCustomersList,
     updateCustomerProfile,
     orders,
     setActiveInvoiceOrder,
@@ -117,41 +114,6 @@ export const AccountView: React.FC = () => {
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span>Create Free Account</span>
             </button>
-          </div>
-
-          {/* Quick 1-Click Demo Profiles */}
-          <div className="pt-8 border-t border-stone-800 text-left">
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Flame className="w-4 h-4" />
-              Or Sign In Instantly With Demo Profiles:
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {demoCustomersList.map((d) => (
-                <button
-                  key={d.id}
-                  onClick={() => switchCustomerAccount(d.id)}
-                  className="p-4 bg-stone-950 border border-stone-800 hover:border-amber-500/50 rounded-2xl text-left transition group"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <img
-                      src={d.avatar}
-                      alt={d.name}
-                      className="w-8 h-8 rounded-lg object-cover border border-amber-500/30"
-                    />
-                    <div className="overflow-hidden">
-                      <p className="font-serif font-bold text-xs text-stone-200 group-hover:text-amber-400 truncate">
-                        {d.name}
-                      </p>
-                      <p className="text-[10px] text-stone-500 truncate">{d.loyaltyTier}</p>
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
-                    <span>Enter Cellar</span>
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </button>
-              ))}
-            </div>
           </div>
         </div>
       </div>

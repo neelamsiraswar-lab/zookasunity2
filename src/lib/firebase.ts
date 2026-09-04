@@ -522,6 +522,15 @@ export const saveCloudCustomer = async (customer: CustomerUser): Promise<void> =
   }
 };
 
+export const deleteCloudCustomer = async (customerId: string): Promise<void> => {
+  try {
+    const docRef = doc(db, COLLECTIONS.CUSTOMERS, customerId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.CUSTOMERS}/${customerId}`);
+  }
+};
+
 export const getCloudCustomer = async (customerId: string): Promise<CustomerUser | null> => {
   try {
     const docRef = doc(db, COLLECTIONS.CUSTOMERS, customerId);
@@ -545,6 +554,34 @@ export const subscribeToCloudCustomer = (customerId: string, callback: (customer
   }, (err) => {
     handleFirestoreError(err, OperationType.GET, `${COLLECTIONS.CUSTOMERS}/${customerId}`);
   });
+};
+
+export const subscribeToCloudCustomers = (callback: (customers: CustomerUser[]) => void): Unsubscribe => {
+  const colRef = collection(db, COLLECTIONS.CUSTOMERS);
+  return onSnapshot(colRef, (snapshot) => {
+    const list: CustomerUser[] = [];
+    snapshot.forEach((docSnap) => {
+      list.push(docSnap.data() as CustomerUser);
+    });
+    callback(list);
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.CUSTOMERS);
+  });
+};
+
+export const getCloudCustomers = async (): Promise<CustomerUser[]> => {
+  try {
+    const colRef = collection(db, COLLECTIONS.CUSTOMERS);
+    const snap = await getDocs(colRef);
+    const list: CustomerUser[] = [];
+    snap.forEach((docSnap) => {
+      list.push(docSnap.data() as CustomerUser);
+    });
+    return list;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.CUSTOMERS);
+    return [];
+  }
 };
 
 // --- PRODUCT REVIEWS & CONNOISSEUR FEEDBACK ---
@@ -821,7 +858,8 @@ export const seedInitialCloudDatabase = async (initialData: {
   homeContent: HomeContent;
   aboutContent: AboutContent;
   adminSettings: AdminSettings;
-  customer: CustomerUser;
+  customer?: CustomerUser;
+  customers?: CustomerUser[];
   headerConfig?: HeaderCustomizationConfig;
   footerConfig?: FooterCustomizationConfig;
   reviews?: ProductReview[];
@@ -887,10 +925,18 @@ export const seedInitialCloudDatabase = async (initialData: {
       seededCount++;
     }
 
-    // 6. Customer
-    const custRef = doc(db, COLLECTIONS.CUSTOMERS, initialData.customer.id);
-    batch.set(custRef, { ...initialData.customer, updatedAt: new Date().toISOString() }, { merge: true });
-    seededCount++;
+    // 6. Customers (all registered patrons)
+    if (initialData.customers && initialData.customers.length > 0) {
+      for (const cust of initialData.customers) {
+        const custRef = doc(db, COLLECTIONS.CUSTOMERS, cust.id);
+        batch.set(custRef, { ...cust, updatedAt: new Date().toISOString() }, { merge: true });
+        seededCount++;
+      }
+    } else if (initialData.customer) {
+      const custRef = doc(db, COLLECTIONS.CUSTOMERS, initialData.customer.id);
+      batch.set(custRef, { ...initialData.customer, updatedAt: new Date().toISOString() }, { merge: true });
+      seededCount++;
+    }
 
     // 7. Product Reviews
     if (initialData.reviews && initialData.reviews.length > 0) {
@@ -962,7 +1008,11 @@ export const seedInitialCloudDatabase = async (initialData: {
       await safeSet(COLLECTIONS.SITE_CONTENT, 'settings', { data: initialData.adminSettings });
       if (initialData.headerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'header', { data: initialData.headerConfig });
       if (initialData.footerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'footer', { data: initialData.footerConfig });
-      if (initialData.customer) await safeSet(COLLECTIONS.CUSTOMERS, initialData.customer.id, initialData.customer);
+      if (initialData.customers && initialData.customers.length > 0) {
+        for (const cust of initialData.customers) await safeSet(COLLECTIONS.CUSTOMERS, cust.id, cust);
+      } else if (initialData.customer) {
+        await safeSet(COLLECTIONS.CUSTOMERS, initialData.customer.id, initialData.customer);
+      }
       if (initialData.reviews) {
         for (const rev of initialData.reviews) await safeSet(COLLECTIONS.REVIEWS, rev.id, rev);
       }

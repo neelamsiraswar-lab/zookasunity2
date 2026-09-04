@@ -13,9 +13,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Wine,
-  Flame,
-  Award
+  Wine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,12 +23,10 @@ export const CustomerAuthModal: React.FC = () => {
     closeAuthModal, 
     authModalInitialTab, 
     loginCustomer, 
-    registerCustomer, 
-    demoCustomersList,
-    switchCustomerAccount
+    registerCustomer
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'demo'>('login');
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -53,7 +49,7 @@ export const CustomerAuthModal: React.FC = () => {
 
   useEffect(() => {
     if (isAuthModalOpen) {
-      setActiveTab(authModalInitialTab);
+      setActiveTab(authModalInitialTab === 'register' ? 'register' : 'login');
       setErrorMsg(null);
       setSuccessMsg(null);
     }
@@ -118,16 +114,6 @@ export const CustomerAuthModal: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelectDemo = (customerId: string) => {
-    setLoading(true);
-    setErrorMsg(null);
-    setTimeout(() => {
-      switchCustomerAccount(customerId);
-      setLoading(false);
-      closeAuthModal();
-    }, 200);
   };
 
   return (
@@ -200,17 +186,6 @@ export const CustomerAuthModal: React.FC = () => {
             >
               <Sparkles className="w-3.5 h-3.5" />
               Create Account
-            </button>
-            <button
-              onClick={() => { setActiveTab('demo'); setErrorMsg(null); }}
-              className={`flex-1 py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
-                activeTab === 'demo'
-                  ? 'bg-amber-500 text-stone-950 font-bold shadow-md shadow-amber-500/20'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-800/50'
-              }`}
-            >
-              <Award className="w-3.5 h-3.5" />
-              Demo Patrons
             </button>
           </div>
 
@@ -286,32 +261,6 @@ export const CustomerAuthModal: React.FC = () => {
                   {loading ? 'Authenticating...' : 'Sign In to Account'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                {/* Quick One-Click Demo Logins */}
-                <div className="pt-4 border-t border-stone-800">
-                  <p className="text-xs text-stone-400 font-semibold mb-2.5 flex items-center gap-1.5">
-                    <Flame className="w-3.5 h-3.5 text-amber-400" />
-                    Quick 1-Click Demo Profiles:
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {demoCustomersList.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => {
-                          setLoginEmail(d.email);
-                          handleSelectDemo(d.id);
-                        }}
-                        className="p-2 bg-stone-950/70 hover:bg-stone-800 border border-stone-800 hover:border-amber-500/50 rounded-xl text-left transition group"
-                      >
-                        <div className="font-semibold text-xs text-stone-200 group-hover:text-amber-400 truncate">
-                          {d.name.split(' ')[0]}
-                        </div>
-                        <div className="text-[10px] text-stone-500 truncate">{d.loyaltyTier}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </form>
             )}
 
@@ -427,52 +376,6 @@ export const CustomerAuthModal: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </form>
-            )}
-
-            {/* TAB 3: DEMO PATRONS */}
-            {activeTab === 'demo' && (
-              <div className="space-y-3">
-                <p className="text-xs text-stone-400">
-                  Select a pre-configured spirits patron profile to test small-batch purchasing, saved multi-address shipping, and order history:
-                </p>
-
-                <div className="space-y-2.5">
-                  {demoCustomersList.map((d) => (
-                    <div
-                      key={d.id}
-                      className="p-4 bg-stone-950 border border-stone-800 hover:border-amber-500/60 rounded-2xl transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={d.avatar}
-                          alt={d.name}
-                          className="w-11 h-11 rounded-xl object-cover border border-amber-500/30"
-                        />
-                        <div>
-                          <div className="font-serif font-bold text-sm text-stone-100 flex items-center gap-2">
-                            {d.name}
-                            <span className="text-[10px] px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800/80 rounded-full font-sans font-semibold">
-                              {d.loyaltyTier}
-                            </span>
-                          </div>
-                          <div className="text-xs text-stone-400">{d.email}</div>
-                          <div className="text-[11px] text-stone-500 mt-0.5">
-                            {d.addresses.length} saved addresses • Joined {d.dateJoined}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleSelectDemo(d.id)}
-                        className="px-4 py-2 bg-stone-800 group-hover:bg-amber-500 group-hover:text-stone-950 text-stone-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5"
-                      >
-                        Sign In as {d.name.split(' ')[0]}
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
           </div>
 

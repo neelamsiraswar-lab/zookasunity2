@@ -10,10 +10,8 @@ import {
   EyeOff, 
   ArrowRight, 
   ShieldCheck, 
-  Flame, 
   Phone, 
   User, 
-  Sparkles, 
   CheckCircle2, 
   AlertCircle,
   KeyRound,
@@ -29,13 +27,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
     loginCustomer, 
     loginWithGoogle, 
     registerCustomer, 
-    demoCustomersList,
-    switchCustomerAccount,
     adminSettings,
     setAgeVerified
   } = useStore();
 
-  const [authTab, setAuthTab] = useState<'login' | 'register' | 'demo'>('login');
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState<string>('');
@@ -156,15 +152,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
     }
   };
 
-  const handleSelectDemo = (patronId: string) => {
-    setIsLoading(true);
-    setErrorMessage('');
-    setTimeout(() => {
-      switchCustomerAccount(patronId);
-      setIsLoading(false);
-    }, 250);
-  };
-
   return (
     <div className="min-h-screen w-full bg-stone-950 text-stone-100 flex flex-col justify-between relative overflow-x-hidden selection:bg-amber-500 selection:text-stone-950">
       {/* Ambient background glows */}
@@ -204,7 +191,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="grid grid-cols-3 bg-stone-950/80 p-1.5 border-b border-stone-800 text-xs font-semibold">
+          <div className="grid grid-cols-2 bg-stone-950/80 p-1.5 border-b border-stone-800 text-xs font-semibold">
             <button
               type="button"
               onClick={() => { setAuthTab('login'); setErrorMessage(''); }}
@@ -229,19 +216,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
             >
               <UserPlus className="w-3.5 h-3.5" />
               <span>Sign Up</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => { setAuthTab('demo'); setErrorMessage(''); }}
-              className={`py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 ${
-                authTab === 'demo'
-                  ? 'bg-amber-500 text-stone-950 shadow-md font-bold'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900'
-              }`}
-            >
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              <span>1-Click Demo</span>
             </button>
           </div>
 
@@ -384,34 +358,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     <span>Continue with Google</span>
                   </button>
                 </div>
-
-                {/* Quick 1-Click Evaluation Bar */}
-                <div className="pt-4 border-t border-stone-800">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-semibold text-stone-400 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                      1-Click Test Profiles:
-                    </span>
-                    <span className="text-[10px] text-stone-500">Instant test</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {demoCustomersList.slice(0, 3).map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => handleSelectDemo(d.id)}
-                        className="p-2 bg-stone-950 hover:bg-stone-800/80 border border-stone-800 hover:border-amber-500/50 rounded-xl text-left transition group cursor-pointer"
-                      >
-                        <div className="font-semibold text-[11px] text-stone-200 group-hover:text-amber-400 truncate">
-                          {d.name.split(' ')[0]}
-                        </div>
-                        <div className="text-[9px] text-amber-500/80 truncate">
-                          {d.loyaltyTier.split(' ')[0]}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </form>
             )}
 
@@ -549,54 +495,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                   )}
                 </button>
               </form>
-            )}
-
-            {/* TAB 3: 1-CLICK DEMO PROFILES */}
-            {authTab === 'demo' && (
-              <div className="space-y-3">
-                <p className="text-xs text-stone-400">
-                  Select a pre-configured collector profile for immediate full-featured evaluation:
-                </p>
-
-                <div className="space-y-2.5">
-                  {demoCustomersList.map((d) => (
-                    <div
-                      key={d.id}
-                      className="p-3.5 bg-stone-950 border border-stone-800 hover:border-amber-500/60 rounded-2xl transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={d.avatar}
-                          alt={d.name}
-                          className="w-10 h-10 rounded-xl object-cover border border-amber-500/30"
-                        />
-                        <div>
-                          <div className="font-serif font-bold text-sm text-stone-100 flex items-center gap-2">
-                            {d.name}
-                            <span className="text-[10px] px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-800/80 rounded-full font-sans font-semibold">
-                              {d.loyaltyTier}
-                            </span>
-                          </div>
-                          <div className="text-xs text-stone-400">{d.email}</div>
-                          <div className="text-[10px] text-stone-500 mt-0.5">
-                            {d.loyaltyPoints.toLocaleString()} loyalty points • {d.addresses.length} saved addresses
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSelectDemo(d.id)}
-                        disabled={isLoading}
-                        className="px-3.5 py-1.5 bg-stone-800 group-hover:bg-amber-500 group-hover:text-stone-950 text-stone-200 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer flex-shrink-0"
-                      >
-                        <span>Sign In as {d.name.split(' ')[0]}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
           </div>
 

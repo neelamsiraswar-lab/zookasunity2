@@ -234,7 +234,10 @@ import {
   deleteCloudLetterheadDocument,
   subscribeToCloudLetterheadDocuments,
   loginWithGoogleFirebase,
-  logoutFirebase
+  logoutFirebase,
+  subscribeToCloudCustomers,
+  getCloudCustomers,
+  deleteCloudCustomer
 } from '../lib/firebase';
 
 export type { AppTab };
@@ -303,8 +306,8 @@ interface StoreContextType {
   isCustomerLoggedIn: boolean;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  authModalInitialTab: 'login' | 'register' | 'demo';
-  openAuthModal: (tab?: 'login' | 'register' | 'demo', redirectTab?: AppTab) => void;
+  authModalInitialTab: 'login' | 'register';
+  openAuthModal: (tab?: 'login' | 'register', redirectTab?: AppTab) => void;
   closeAuthModal: () => void;
   loginCustomer: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
@@ -317,6 +320,9 @@ interface StoreContextType {
   logoutCustomer: () => Promise<void>;
   switchCustomerAccount: (customerId: string) => void;
   demoCustomersList: CustomerUser[];
+  registeredCustomers: CustomerUser[];
+  saveCustomerByAdmin: (customer: CustomerUser) => Promise<void>;
+  deleteCustomerByAdmin: (customerId: string) => Promise<void>;
 
   // Cart Helpers
   addToCart: (product: SpiritProduct, quantity?: number, giftBox?: boolean, customEngraving?: string) => void;
@@ -434,6 +440,21 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return saved ? JSON.parse(saved) : initialCustomer;
     } catch {
       return initialCustomer;
+    }
+  });
+
+  const [registeredCustomers, setRegisteredCustomers] = useState<CustomerUser[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_registered_customers`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+      return demoCustomers;
+    } catch {
+      return demoCustomers;
     }
   });
 
@@ -607,10 +628,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [authModalInitialTab, setAuthModalInitialTab] = useState<'login' | 'register' | 'demo'>('login');
+  const [authModalInitialTab, setAuthModalInitialTab] = useState<'login' | 'register'>('login');
   const [authModalRedirectTab, setAuthModalRedirectTab] = useState<AppTab | null>(null);
 
-  const openAuthModal = useCallback((tab: 'login' | 'register' | 'demo' = 'login', redirectTab?: AppTab) => {
+  const openAuthModal = useCallback((tab: 'login' | 'register' = 'login', redirectTab?: AppTab) => {
     setAuthModalInitialTab(tab);
     if (redirectTab) {
       setAuthModalRedirectTab(redirectTab);
@@ -715,6 +736,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let unsubBlog: () => void = () => {};
     let unsubContent: () => void = () => {};
     let unsubCustomer: () => void = () => {};
+    let unsubRegisteredCustomers: () => void = () => {};
     let unsubReviews: () => void = () => {};
     let unsubBallotAllocations: () => void = () => {};
     let unsubBallotEntries: () => void = () => {};
@@ -804,6 +826,18 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           }
         });
 
+        // 6b. All Registered Customers Listener (Admin Directory)
+        unsubRegisteredCustomers = subscribeToCloudCustomers((cloudCusts) => {
+          if (cloudCusts && cloudCusts.length > 0) {
+            setRegisteredCustomers(cloudCusts);
+            try {
+              localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(cloudCusts));
+            } catch (_) {}
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
         // 7. Product Reviews Listener
         unsubReviews = subscribeToAllCloudReviews((cloudRevs) => {
           if (cloudRevs.length > 0) {
@@ -865,6 +899,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubBlog();
       unsubContent();
       unsubCustomer();
+      unsubRegisteredCustomers();
       unsubReviews();
       unsubBallotAllocations();
       unsubBallotEntries();
@@ -886,6 +921,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         aboutContent,
         adminSettings,
         customer,
+        customers: registeredCustomers,
         headerConfig,
         footerConfig,
         reviews,
@@ -1394,6 +1430,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     setCustomer(activeProfile);
     setIsCustomerLoggedIn(true);
+    setRegisteredCustomers(prev => {
+      const idx = prev.findIndex(p => p.id === activeProfile.id || p.email.toLowerCase() === activeProfile.email.toLowerCase());
+      const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? { ...p, ...activeProfile } : p) : [activeProfile, ...prev];
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
+      } catch (_) {}
+      return updatedList;
+    });
     try {
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'true');
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(activeProfile));
@@ -1431,11 +1475,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       emailNotifications: true,
       smsNotifications: false,
       spiritPreferences: details.spiritPreferences && details.spiritPreferences.length > 0 ? details.spiritPreferences : ['Single Malt Whisky', 'Cask Strength Bourbon'],
-      addresses: []
+      addresses: [],
+      authProvider: 'email',
+      isEmailVerified: true,
+      lastLoginAt: new Date().toISOString(),
+      accountStatus: 'active'
     };
 
     setCustomer(newCust);
     setIsCustomerLoggedIn(true);
+    setRegisteredCustomers(prev => {
+      const idx = prev.findIndex(p => p.id === newCust.id || p.email.toLowerCase() === newCust.email.toLowerCase());
+      const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? { ...p, ...newCust } : p) : [newCust, ...prev];
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
+      } catch (_) {}
+      return updatedList;
+    });
     try {
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'true');
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(newCust));
@@ -1456,25 +1512,58 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const res = await loginWithGoogleFirebase();
       if (res.success && res.user) {
         const u = res.user;
-        const email = u.email || 'patron@example.com';
+        const email = (u.email || 'patron@example.com').toLowerCase();
         const name = u.displayName || email.split('@')[0];
-        const profile: CustomerUser = {
+        const nowIso = new Date().toISOString();
+
+        const existing = registeredCustomers.find(p => p.email.toLowerCase() === email || p.googleUid === u.uid);
+        const profile: CustomerUser = existing ? {
+          ...existing,
+          name: existing.name || name,
+          avatar: u.photoURL || existing.avatar,
+          authProvider: 'google',
+          googleUid: u.uid,
+          googleEmail: email,
+          googleDisplayName: u.displayName || existing.name,
+          googlePhotoUrl: u.photoURL || existing.avatar,
+          isEmailVerified: u.emailVerified ?? true,
+          lastLoginAt: nowIso,
+          phone: u.phoneNumber || existing.phone || '+1 (555) 012-3456'
+        } : {
           id: `cust-g-${u.uid}`,
           name: name,
-          email: email.toLowerCase(),
+          email: email,
           phone: u.phoneNumber || '+1 (555) 012-3456',
           avatar: u.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
           loyaltyTier: 'Silver Cask',
           loyaltyPoints: 100,
           totalSpent: 0,
-          dateJoined: new Date().toISOString().split('T')[0],
+          dateJoined: nowIso.split('T')[0],
           emailNotifications: true,
           smsNotifications: false,
           spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon'],
-          addresses: []
+          addresses: [],
+          authProvider: 'google',
+          googleUid: u.uid,
+          googleEmail: email,
+          googleDisplayName: u.displayName || name,
+          googlePhotoUrl: u.photoURL || undefined,
+          isEmailVerified: u.emailVerified ?? true,
+          lastLoginAt: nowIso,
+          accountStatus: 'active'
         };
+
         setCustomer(profile);
         setIsCustomerLoggedIn(true);
+        setRegisteredCustomers(prev => {
+          const idx = prev.findIndex(p => p.id === profile.id || p.email.toLowerCase() === email);
+          const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? profile : p) : [profile, ...prev];
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
+          } catch (_) {}
+          return updatedList;
+        });
+
         try {
           localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'true');
           localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(profile));
@@ -1491,6 +1580,35 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } catch (err: any) {
       return { success: false, error: err?.message || 'Google sign-in error.' };
     }
+  };
+
+  const saveCustomerByAdmin = async (cust: CustomerUser): Promise<void> => {
+    setRegisteredCustomers(prev => {
+      const idx = prev.findIndex(p => p.id === cust.id);
+      const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? cust : p) : [cust, ...prev];
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
+      } catch (_) {}
+      return updatedList;
+    });
+    if (customer.id === cust.id) {
+      setCustomer(cust);
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(cust));
+      } catch (_) {}
+    }
+    await saveCloudCustomer(cust);
+  };
+
+  const deleteCustomerByAdmin = async (customerId: string): Promise<void> => {
+    setRegisteredCustomers(prev => {
+      const updatedList = prev.filter(p => p.id !== customerId);
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
+      } catch (_) {}
+      return updatedList;
+    });
+    await deleteCloudCustomer(customerId);
   };
 
   const logoutCustomer = async () => {
@@ -2076,6 +2194,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         logoutCustomer,
         switchCustomerAccount,
         demoCustomersList: demoCustomers,
+        registeredCustomers,
+        saveCustomerByAdmin,
+        deleteCustomerByAdmin,
         orders,
         blogPosts,
         aboutContent,

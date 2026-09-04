@@ -165,6 +165,16 @@ export interface CustomerUser {
   dateJoined: string;
   emailNotifications: boolean;
   smsNotifications: boolean;
+  // Authentication & Google Login Data
+  authProvider?: 'google' | 'email' | 'guest';
+  googleUid?: string;
+  googleEmail?: string;
+  googleDisplayName?: string;
+  googlePhotoUrl?: string;
+  isEmailVerified?: boolean;
+  lastLoginAt?: string;
+  accountStatus?: 'active' | 'suspended' | 'vip';
+  adminNotes?: string;
 }
 
 export interface BlogPost {

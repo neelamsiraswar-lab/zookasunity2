@@ -59,8 +59,6 @@ export const Navbar: React.FC = () => {
     isCustomerLoggedIn,
     openAuthModal,
     logoutCustomer,
-    switchCustomerAccount,
-    demoCustomersList,
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
@@ -333,30 +331,6 @@ export const Navbar: React.FC = () => {
                           <User className="w-3.5 h-3.5 text-amber-400" />
                           <span>Cellar Profile & Orders</span>
                         </button>
-
-                        {/* Switch Account Quick Presets */}
-                        <div className="pt-2 border-t border-stone-800">
-                          <p className="text-[10px] text-stone-400 font-semibold mb-1.5 uppercase tracking-wider">
-                            Switch Demo Account:
-                          </p>
-                          <div className="space-y-1">
-                            {demoCustomersList.map((d) => (
-                              <button
-                                key={d.id}
-                                onClick={() => {
-                                  switchCustomerAccount(d.id);
-                                  setShowAccountMenu(false);
-                                }}
-                                className={`w-full px-2 py-1.5 rounded-lg text-left text-[11px] flex items-center justify-between transition ${
-                                  customer.id === d.id ? 'bg-amber-500/10 text-amber-300 font-semibold' : 'text-stone-400 hover:bg-stone-800 hover:text-stone-200'
-                                }`}
-                              >
-                                <span className="truncate">{d.name}</span>
-                                {customer.id === d.id && <span className="text-[9px] text-amber-400 font-bold">Active</span>}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
 
                         <button
                           onClick={async () => {

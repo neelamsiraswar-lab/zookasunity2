@@ -8,6 +8,7 @@ import { FooterCustomizer } from '../admin/FooterCustomizer';
 import { BottomNavCustomizer } from '../admin/BottomNavCustomizer';
 import { BallotDrawsAdmin } from '../admin/BallotDrawsAdmin';
 import { LetterheadManager } from '../admin/LetterheadManager';
+import { RegisteredUsersAdmin } from '../admin/RegisteredUsersAdmin';
 import { 
   SpiritProduct, 
   DistillerInventoryItem, 
@@ -113,6 +114,7 @@ export const AdminPanelView: React.FC = () => {
     ballotEntries,
     letterheadDocuments,
     letterheadTemplates,
+    registeredCustomers,
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
@@ -143,7 +145,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -933,6 +935,7 @@ export const AdminPanelView: React.FC = () => {
       <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
         {[
           { id: 'analytics', label: 'Financials & KPI Overview', icon: BarChart3 },
+          { id: 'users', label: `Registered Patrons & Google Logins (${registeredCustomers.length})`, icon: Users },
           { id: 'inventory', label: `Distiller Real-Time Cask Tracker (${inventoryLots.length})`, icon: Layers },
           { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
           { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
@@ -969,7 +972,7 @@ export const AdminPanelView: React.FC = () => {
       {activeTab === 'analytics' && (
         <div className="space-y-8">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div className="p-6 rounded-2xl bg-stone-900 border border-stone-800 space-y-2">
               <span className="text-xs text-stone-400 uppercase tracking-wider block flex items-center justify-between">
                 <span>Gross Vault Revenue</span>
@@ -1016,6 +1019,22 @@ export const AdminPanelView: React.FC = () => {
               </strong>
               <span className="text-[11px] text-rose-400/80">Requires immediate distillery cask draw</span>
             </div>
+
+            <div
+              onClick={() => setActiveTab('users')}
+              className="p-6 rounded-2xl bg-stone-900 border border-stone-800 space-y-2 cursor-pointer hover:border-amber-500/50 transition group"
+            >
+              <span className="text-xs text-stone-400 uppercase tracking-wider block flex items-center justify-between">
+                <span>Registered Patrons</span>
+                <Users className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              </span>
+              <strong className="font-serif text-3xl font-bold text-stone-100 block">
+                {registeredCustomers.length} Patrons
+              </strong>
+              <span className="text-[11px] text-amber-400 flex items-center gap-1 font-medium">
+                <span>View Google & Email Directory →</span>
+              </span>
+            </div>
           </div>
 
           {/* Low Stock Alerts */}
@@ -1042,6 +1061,9 @@ export const AdminPanelView: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* REGISTERED PATRONS & GOOGLE LOGINS CMS */}
+      {activeTab === 'users' && <RegisteredUsersAdmin />}
 
       {/* 2. REAL-TIME DISTILLER INVENTORY TRACKER */}
       {activeTab === 'inventory' && (
