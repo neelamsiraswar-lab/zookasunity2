@@ -92,7 +92,19 @@ onAuthStateChanged(auth, (user) => {
 export const storage = getStorage(app);
 
 // Google Authentication Popup helper for customer login
-export const loginWithGoogleFirebase = async (): Promise<{ success: boolean; user?: any; error?: string }> => {
+export interface GoogleAuthResult {
+  success: boolean;
+  user?: any;
+  error?: string;
+  errorCode?: string;
+  isUnauthorizedDomain?: boolean;
+  unauthorizedDomain?: string;
+  targetDomain?: string;
+  projectId?: string;
+  consoleSettingsUrl?: string;
+}
+
+export const loginWithGoogleFirebase = async (): Promise<GoogleAuthResult> => {
   try {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
@@ -100,7 +112,29 @@ export const loginWithGoogleFirebase = async (): Promise<{ success: boolean; use
     return { success: true, user: result.user };
   } catch (error: any) {
     console.warn('Google sign-in popup note:', error?.message || error);
-    return { success: false, error: error?.message || 'Google sign-in could not be completed.' };
+    const code = error?.code || '';
+    const message = error?.message || 'Google sign-in could not be completed.';
+    const isUnauthorizedDomain = 
+      code === 'auth/unauthorized-domain' || 
+      message.toLowerCase().includes('unauthorized domain') || 
+      message.toLowerCase().includes('unauthorized-domain');
+    
+    const currentHost = typeof window !== 'undefined' ? window.location.hostname : 'zookasunityspirits.in';
+    const projectId = firebaseConfigData.projectId || 'commanding-path-sxctm';
+    const consoleSettingsUrl = `https://console.firebase.google.com/project/${projectId}/authentication/settings`;
+
+    return { 
+      success: false, 
+      error: isUnauthorizedDomain 
+        ? `Domain "${currentHost}" is not yet authorized in Firebase Console for Google OAuth. Please add "zookasunityspirits.in" in Firebase Auth Authorized Domains.`
+        : message,
+      errorCode: code || (isUnauthorizedDomain ? 'auth/unauthorized-domain' : undefined),
+      isUnauthorizedDomain,
+      unauthorizedDomain: currentHost,
+      targetDomain: 'zookasunityspirits.in',
+      projectId,
+      consoleSettingsUrl
+    };
   }
 };
 

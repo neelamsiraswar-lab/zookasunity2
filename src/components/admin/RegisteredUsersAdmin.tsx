@@ -29,7 +29,8 @@ import {
   ChevronRight,
   Package,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 
 export const RegisteredUsersAdmin: React.FC = () => {
@@ -368,6 +369,54 @@ export const RegisteredUsersAdmin: React.FC = () => {
             <Plus className="w-4 h-4" />
             <span>Register Patron</span>
           </button>
+        </div>
+      </div>
+
+      {/* Google OAuth & Authorized Domain Status Banner */}
+      <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-stone-900 via-stone-900 to-amber-950/20 border border-amber-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-3.5">
+          <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 mt-0.5">
+            <Globe className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-bold text-stone-200">
+                Google OAuth Authorized Domain:
+              </span>
+              <span className="font-mono text-xs text-amber-400 font-bold bg-stone-950 px-2 py-0.5 rounded border border-amber-500/30">
+                zookasunityspirits.in
+              </span>
+              <span className="px-2 py-0.5 text-[10px] uppercase font-bold rounded-full bg-emerald-950 border border-emerald-700/60 text-emerald-400">
+                Configured in App
+              </span>
+            </div>
+            <p className="text-xs text-stone-400 mt-1">
+              Google Auth requires <code className="text-amber-300 font-mono font-semibold">zookasunityspirits.in</code> and <code className="text-amber-300 font-mono font-semibold">www.zookasunityspirits.in</code> allowlisted in Firebase Console (Authentication &gt; Settings &gt; Authorized domains).
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText('zookasunityspirits.in');
+              showToast('Domain "zookasunityspirits.in" copied to clipboard.');
+            }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-stone-800 hover:bg-stone-700 text-stone-300 hover:text-stone-100 rounded-xl text-xs font-semibold border border-stone-700 transition cursor-pointer"
+          >
+            <Copy className="w-3.5 h-3.5" />
+            <span>Copy Domain</span>
+          </button>
+
+          <a
+            href="https://console.firebase.google.com/project/commanding-path-sxctm/authentication/settings"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition cursor-pointer"
+          >
+            <span>Open Firebase Console</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
       </div>
 
