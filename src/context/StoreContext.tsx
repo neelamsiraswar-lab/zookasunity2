@@ -34,7 +34,6 @@ import {
   initialProducts,
   initialInventoryLots,
   initialCustomer,
-  demoCustomers,
   initialOrders,
   initialBlogPosts,
   initialAboutContent,
@@ -52,6 +51,22 @@ import {
   initialLetterheadDocuments,
   initialCompanyDetails
 } from '../data/initialLetterheadData';
+
+export const emptyCustomer: CustomerUser = {
+  id: '',
+  name: '',
+  email: '',
+  phone: '',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+  loyaltyTier: 'Silver Cask',
+  loyaltyPoints: 0,
+  totalSpent: 0,
+  dateJoined: new Date().toISOString().split('T')[0],
+  emailNotifications: false,
+  smsNotifications: false,
+  spiritPreferences: [],
+  addresses: []
+};
 
 export const normalizeHeaderConfig = (incoming?: Partial<HeaderCustomizationConfig> | null): HeaderCustomizationConfig => {
   const base = initialHeaderConfig;
@@ -315,6 +330,7 @@ interface StoreContextType {
     name: string;
     email: string;
     phone?: string;
+    password?: string;
     spiritPreferences?: string[];
   }) => Promise<{ success: boolean; error?: string }>;
   logoutCustomer: () => Promise<void>;
@@ -437,9 +453,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [customer, setCustomer] = useState<CustomerUser>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_customer`);
-      return saved ? JSON.parse(saved) : initialCustomer;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.id) return parsed;
+      }
+      return initialCustomer || emptyCustomer;
     } catch {
-      return initialCustomer;
+      return initialCustomer || emptyCustomer;
     }
   });
 
@@ -448,13 +468,13 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_registered_customers`);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
-      return demoCustomers;
+      return [];
     } catch {
-      return demoCustomers;
+      return [];
     }
   });
 
@@ -818,13 +838,15 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         });
 
         // 6. Customer Listener
-        unsubCustomer = subscribeToCloudCustomer(customer.id, (cloudCust) => {
-          if (cloudCust) {
-            setCustomer(cloudCust);
-            setCloudSyncStatus('connected');
-            setLastSyncedAt(new Date());
-          }
-        });
+        if (customer?.id) {
+          unsubCustomer = subscribeToCloudCustomer(customer.id, (cloudCust) => {
+            if (cloudCust) {
+              setCustomer(cloudCust);
+              setCloudSyncStatus('connected');
+              setLastSyncedAt(new Date());
+            }
+          });
+        }
 
         // 6b. All Registered Customers Listener (Admin Directory)
         unsubRegisteredCustomers = subscribeToCloudCustomers((cloudCusts) => {
@@ -1393,46 +1415,47 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // =========================================================================
   // CUSTOMER AUTHENTICATION & SESSION MANAGEMENT
   // =========================================================================
-  const loginCustomer = async (email: string, _password?: string): Promise<{ success: boolean; error?: string }> => {
+  const loginCustomer = async (email: string, password?: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedEmail = email.trim().toLowerCase();
     if (!trimmedEmail || !trimmedEmail.includes('@')) {
       return { success: false, error: 'Please enter a valid email address.' };
     }
 
-    // Check against demo accounts or existing loaded customer
-    const matchedDemo = demoCustomers.find(d => d.email.toLowerCase() === trimmedEmail);
-    let activeProfile: CustomerUser;
+    // Lookup in local registered customers or cloud customers
+    let activeProfile = registeredCustomers.find(d => d.email.toLowerCase() === trimmedEmail);
 
-    if (matchedDemo) {
-      activeProfile = matchedDemo;
-    } else if (customer.email.toLowerCase() === trimmedEmail) {
-      activeProfile = customer;
-    } else {
-      // Create new customer profile
-      const namePart = trimmedEmail.split('@')[0].replace(/[._-]/g, ' ');
-      const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-      activeProfile = {
-        id: `cust-user-${Date.now()}`,
-        name: formattedName,
-        email: trimmedEmail,
-        phone: '+1 (555) 019-2831',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-        loyaltyTier: 'Silver Cask',
-        loyaltyPoints: 100,
-        totalSpent: 0,
-        dateJoined: new Date().toISOString().split('T')[0],
-        emailNotifications: true,
-        smsNotifications: false,
-        spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon'],
-        addresses: []
+    if (!activeProfile) {
+      try {
+        const cloudCusts = await getCloudCustomers();
+        const cloudMatch = cloudCusts.find(c => c.email.toLowerCase() === trimmedEmail);
+        if (cloudMatch) {
+          activeProfile = cloudMatch;
+        }
+      } catch (e) {
+        console.warn('Cloud customer lookup note:', e);
+      }
+    }
+
+    if (!activeProfile) {
+      return {
+        success: false,
+        error: 'No patron account found with this email. Please register to create your account.'
+      };
+    }
+
+    // Verify password if account has password configured
+    if (activeProfile.password && password && activeProfile.password !== password) {
+      return {
+        success: false,
+        error: 'Invalid password. Please check your credentials.'
       };
     }
 
     setCustomer(activeProfile);
     setIsCustomerLoggedIn(true);
     setRegisteredCustomers(prev => {
-      const idx = prev.findIndex(p => p.id === activeProfile.id || p.email.toLowerCase() === activeProfile.email.toLowerCase());
-      const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? { ...p, ...activeProfile } : p) : [activeProfile, ...prev];
+      const idx = prev.findIndex(p => p.id === activeProfile!.id || p.email.toLowerCase() === activeProfile!.email.toLowerCase());
+      const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? { ...p, ...activeProfile } : p) : [activeProfile!, ...prev];
       try {
         localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
       } catch (_) {}
@@ -1457,16 +1480,23 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     name: string;
     email: string;
     phone?: string;
+    password?: string;
     spiritPreferences?: string[];
   }): Promise<{ success: boolean; error?: string }> => {
-    if (!details.name.trim()) return { success: false, error: 'Please provide your full name.' };
+    if (!details.name.trim()) return { success: false, error: 'Please provide your full legal name.' };
     if (!details.email.trim() || !details.email.includes('@')) return { success: false, error: 'Please provide a valid email address.' };
+
+    const trimmedEmail = details.email.trim().toLowerCase();
+    const existing = registeredCustomers.find(c => c.email.toLowerCase() === trimmedEmail);
+    if (existing) {
+      return { success: false, error: 'An account with this email address already exists. Please sign in.' };
+    }
 
     const newCust: CustomerUser = {
       id: `cust-patron-${Date.now()}`,
       name: details.name.trim(),
-      email: details.email.trim().toLowerCase(),
-      phone: details.phone?.trim() || '+1 (555) 012-3456',
+      email: trimmedEmail,
+      phone: details.phone?.trim() || '',
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       loyaltyTier: 'Silver Cask',
       loyaltyPoints: 100,
@@ -1477,6 +1507,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       spiritPreferences: details.spiritPreferences && details.spiritPreferences.length > 0 ? details.spiritPreferences : ['Single Malt Whisky', 'Cask Strength Bourbon'],
       addresses: [],
       authProvider: 'email',
+      password: details.password || undefined,
       isEmailVerified: true,
       lastLoginAt: new Date().toISOString(),
       accountStatus: 'active'
@@ -1613,14 +1644,16 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const logoutCustomer = async () => {
     setIsCustomerLoggedIn(false);
+    setCustomer(emptyCustomer);
     try {
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'false');
+      localStorage.removeItem(`${LOCAL_STORAGE_KEY}_customer`);
     } catch (_) {}
     await logoutFirebase();
   };
 
   const switchCustomerAccount = (customerId: string) => {
-    const found = demoCustomers.find(d => d.id === customerId);
+    const found = registeredCustomers.find(d => d.id === customerId);
     if (found) {
       setCustomer(found);
       setIsCustomerLoggedIn(true);
@@ -2193,7 +2226,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         registerCustomer,
         logoutCustomer,
         switchCustomerAccount,
-        demoCustomersList: demoCustomers,
+        demoCustomersList: registeredCustomers,
         registeredCustomers,
         saveCustomerByAdmin,
         deleteCustomerByAdmin,

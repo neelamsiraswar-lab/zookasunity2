@@ -165,6 +165,8 @@ export interface CustomerUser {
   dateJoined: string;
   emailNotifications: boolean;
   smsNotifications: boolean;
+  password?: string;
+  passwordHash?: string;
   // Authentication & Google Login Data
   authProvider?: 'google' | 'email' | 'guest';
   googleUid?: string;

@@ -137,6 +137,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
         name: regName,
         email: regEmail,
         phone: regPhone,
+        password: regPassword,
         spiritPreferences: regPreferences
       });
 
@@ -261,7 +262,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     <label className="text-xs font-semibold text-stone-300">
                       Password
                     </label>
-                    <span className="text-[11px] text-amber-400/80">Demo: any password accepted</span>
                   </div>
                   <div className="relative">
                     <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
@@ -293,16 +293,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     />
                     <span>Remember this device</span>
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginEmail('arthur.sterling@example.com');
-                      setLoginPassword('zookas2026');
-                    }}
-                    className="text-amber-400 hover:text-amber-300 transition hover:underline"
-                  >
-                    Use Demo Credentials
-                  </button>
                 </div>
 
                 <button
@@ -374,7 +364,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                       <input
                         type="text"
                         required
-                        placeholder="Lord Arthur Sterling"
+                        placeholder="e.g. Eleanor Vance"
                         value={regName}
                         onChange={(e) => setRegName(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 bg-stone-950 border border-stone-700/80 rounded-xl text-stone-100 placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500 transition"
@@ -408,7 +398,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     <input
                       type="email"
                       required
-                      placeholder="arthur.sterling@example.com"
+                      placeholder="patron@domain.com"
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-stone-950 border border-stone-700/80 rounded-xl text-stone-100 placeholder-stone-500 text-xs focus:outline-none focus:border-amber-500 transition"
@@ -424,6 +414,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
                     <input
                       type={showRegPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
                       placeholder="At least 6 characters"
                       value={regPassword}
                       onChange={(e) => setRegPassword(e.target.value)}

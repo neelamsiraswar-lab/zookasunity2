@@ -158,18 +158,6 @@ export const AdminAuthLockScreen: React.FC<AdminAuthLockScreenProps> = ({ onAuth
     }, 600);
   };
 
-  // Quick fill helper for testers/evaluators
-  const handleQuickFill = (type: 'password' | 'pin') => {
-    if (type === 'password') {
-      setPasswordInput(currentPassword);
-      setErrorMessage('');
-    } else {
-      setPinInput(currentPin);
-      setErrorMessage('');
-      setTimeout(() => verifyPin(currentPin), 200);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-stone-950 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden text-stone-100">
       {/* Ambient background glows */}
@@ -385,44 +373,8 @@ export const AdminAuthLockScreen: React.FC<AdminAuthLockScreenProps> = ({ onAuth
           </form>
         )}
 
-        {/* Quick Demo Credentials Assistant */}
-        <div className="mt-6 pt-5 border-t border-stone-800/80">
-          <div className="flex items-center justify-between text-[11px] text-stone-400 mb-2">
-            <span className="flex items-center gap-1 text-stone-300 font-medium">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>Evaluator Credentials</span>
-            </span>
-            <span className="text-[10px] text-stone-500">Click to autofill</span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('pin');
-                handleQuickFill('pin');
-              }}
-              className="p-2 bg-stone-950/70 hover:bg-stone-800/60 border border-stone-800 rounded-lg text-left transition cursor-pointer group"
-            >
-              <span className="text-[10px] text-stone-500 block">PIN:</span>
-              <span className="text-amber-400 font-bold group-hover:underline">{currentPin}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setAuthMode('password');
-                handleQuickFill('password');
-              }}
-              className="p-2 bg-stone-950/70 hover:bg-stone-800/60 border border-stone-800 rounded-lg text-left transition cursor-pointer group"
-            >
-              <span className="text-[10px] text-stone-500 block">Password:</span>
-              <span className="text-amber-400 font-bold group-hover:underline truncate block">{currentPassword}</span>
-            </button>
-          </div>
-        </div>
-
         {/* Footer Security Badge */}
-        <div className="mt-4 text-center">
+        <div className="mt-6 pt-5 border-t border-stone-800/80 text-center">
           <p className="text-[10px] text-stone-600 flex items-center justify-center gap-1">
             <Lock className="w-3 h-3 text-stone-500" />
             <span>Google Cloud Firestore Protected • 256-bit Encrypted Session</span>

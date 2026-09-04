@@ -514,6 +514,7 @@ export const subscribeToCloudSiteContent = (
 
 // --- CUSTOMER PROFILE ---
 export const saveCloudCustomer = async (customer: CustomerUser): Promise<void> => {
+  if (!customer?.id) return;
   try {
     const docRef = doc(db, COLLECTIONS.CUSTOMERS, customer.id);
     await setDoc(docRef, { ...customer, updatedAt: new Date().toISOString() }, { merge: true });
@@ -928,11 +929,13 @@ export const seedInitialCloudDatabase = async (initialData: {
     // 6. Customers (all registered patrons)
     if (initialData.customers && initialData.customers.length > 0) {
       for (const cust of initialData.customers) {
-        const custRef = doc(db, COLLECTIONS.CUSTOMERS, cust.id);
-        batch.set(custRef, { ...cust, updatedAt: new Date().toISOString() }, { merge: true });
-        seededCount++;
+        if (cust?.id) {
+          const custRef = doc(db, COLLECTIONS.CUSTOMERS, cust.id);
+          batch.set(custRef, { ...cust, updatedAt: new Date().toISOString() }, { merge: true });
+          seededCount++;
+        }
       }
-    } else if (initialData.customer) {
+    } else if (initialData.customer?.id) {
       const custRef = doc(db, COLLECTIONS.CUSTOMERS, initialData.customer.id);
       batch.set(custRef, { ...initialData.customer, updatedAt: new Date().toISOString() }, { merge: true });
       seededCount++;
@@ -1009,8 +1012,10 @@ export const seedInitialCloudDatabase = async (initialData: {
       if (initialData.headerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'header', { data: initialData.headerConfig });
       if (initialData.footerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'footer', { data: initialData.footerConfig });
       if (initialData.customers && initialData.customers.length > 0) {
-        for (const cust of initialData.customers) await safeSet(COLLECTIONS.CUSTOMERS, cust.id, cust);
-      } else if (initialData.customer) {
+        for (const cust of initialData.customers) {
+          if (cust?.id) await safeSet(COLLECTIONS.CUSTOMERS, cust.id, cust);
+        }
+      } else if (initialData.customer?.id) {
         await safeSet(COLLECTIONS.CUSTOMERS, initialData.customer.id, initialData.customer);
       }
       if (initialData.reviews) {

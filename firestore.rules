@@ -41,7 +41,12 @@ service cloud.firestore {
     }
 
     function isValidCustomer(data) {
-      return data.email is string && data.email.size() > 0;
+      return data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+             (!('loyaltyPoints' in data) || (data.loyaltyPoints is number && data.loyaltyPoints >= 0)) &&
+             (!('totalSpent' in data) || (data.totalSpent is number && data.totalSpent >= 0)) &&
+             (!('spiritPreferences' in data) || (data.spiritPreferences is list && data.spiritPreferences.size() <= 25));
     }
 
     function isValidReview(data) {
@@ -122,8 +127,10 @@ service cloud.firestore {
 
     // 6. Customer Accounts
     match /customers/{customerId} {
-      allow read: if true;
-      allow create, update: if isValidId(customerId) && isValidCustomer(request.resource.data);
+      allow read: if isValidId(customerId);
+      allow create: if isValidId(customerId) && isValidCustomer(request.resource.data) &&
+                      (!('id' in request.resource.data) || request.resource.data.id == customerId);
+      allow update: if isValidId(customerId) && isValidCustomer(request.resource.data);
       allow delete: if isValidId(customerId);
     }
 

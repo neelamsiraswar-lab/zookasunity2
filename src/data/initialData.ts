@@ -496,235 +496,11 @@ export const initialInventoryLots: DistillerInventoryItem[] = [
   }
 ];
 
-export const initialCustomer: CustomerUser = {
-  id: 'cust-unity-9901',
-  name: 'Lord Arthur Sterling',
-  email: 'arthur.sterling@casksociety.com',
-  phone: '+1 (555) 392-8812',
-  avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  loyaltyTier: 'Gold Cask',
-  loyaltyPoints: 1850,
-  totalSpent: 215000,
-  dateJoined: '2023-11-14',
-  emailNotifications: true,
-  smsNotifications: false,
-  spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon', 'Artisanal Mezcal', 'High-Proof Ryes'],
-  authProvider: 'email',
-  isEmailVerified: true,
-  lastLoginAt: '2026-09-02T18:45:00Z',
-  accountStatus: 'vip',
-  adminNotes: 'Founding Collector. Priority ballot draw recipient for annual 25-Year single cask allocations.',
-  addresses: [
-    {
-      id: 'addr-01',
-      fullName: 'Lord Arthur Sterling',
-      street: '742 Amber Cask Boulevard, Suite 18B',
-      city: 'San Francisco',
-      state: 'CA',
-      zipCode: '94107',
-      country: 'United States',
-      phone: '+1 (555) 392-8812',
-      isDefault: true
-    },
-    {
-      id: 'addr-02',
-      fullName: 'Arthur Sterling (Country Estate)',
-      street: '12 Highland Mist Ridge',
-      city: 'St. Helena',
-      state: 'CA',
-      zipCode: '94574',
-      country: 'United States',
-      phone: '+1 (555) 392-8812',
-      isDefault: false
-    }
-  ]
-};
+export const initialCustomer: CustomerUser | null = null;
 
-export const demoCustomers: CustomerUser[] = [
-  initialCustomer,
-  {
-    id: 'cust-unity-9902',
-    name: 'Elena Rostova',
-    email: 'elena.rostova@spiritsguild.org',
-    phone: '+1 (555) 842-1920',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    loyaltyTier: 'Master Distiller Circle',
-    loyaltyPoints: 3420,
-    totalSpent: 420000,
-    dateJoined: '2022-04-09',
-    emailNotifications: true,
-    smsNotifications: true,
-    spiritPreferences: ['Botanical Gin', 'High-Proof Ryes', 'Cask Strength Bourbon'],
-    authProvider: 'google',
-    googleUid: '108492049182049182390',
-    googleEmail: 'elena.rostova@spiritsguild.org',
-    googleDisplayName: 'Elena Rostova',
-    googlePhotoUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    isEmailVerified: true,
-    lastLoginAt: '2026-09-03T11:20:15Z',
-    accountStatus: 'vip',
-    adminNotes: 'Spirits Guild sommelier. Frequent high-proof botanical gin purchaser.',
-    addresses: [
-      {
-        id: 'addr-elena-01',
-        fullName: 'Elena Rostova',
-        street: '88 Pike Ridge Way, Suite 4',
-        city: 'Seattle',
-        state: 'WA',
-        zipCode: '98101',
-        country: 'United States',
-        phone: '+1 (555) 842-1920',
-        isDefault: true
-      }
-    ]
-  },
-  {
-    id: 'cust-unity-9903',
-    name: 'Marcus Vance',
-    email: 'marcus.vance@speysidevault.com',
-    phone: '+1 (555) 671-3309',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-    loyaltyTier: 'Silver Cask',
-    loyaltyPoints: 920,
-    totalSpent: 110000,
-    dateJoined: '2024-02-18',
-    emailNotifications: true,
-    smsNotifications: false,
-    spiritPreferences: ['Single Malt Whisky', 'Rare Peated Cask Releases', 'Artisanal Aged Rum'],
-    authProvider: 'email',
-    isEmailVerified: true,
-    lastLoginAt: '2026-08-30T14:10:00Z',
-    accountStatus: 'active',
-    adminNotes: 'Collector focusing on peated releases and rum cask finished whiskies.',
-    addresses: [
-      {
-        id: 'addr-marcus-01',
-        fullName: 'Marcus Vance',
-        street: '450 Lexington Avenue, Penthouse 3',
-        city: 'New York',
-        state: 'NY',
-        zipCode: '10017',
-        country: 'United States',
-        phone: '+1 (555) 671-3309',
-        isDefault: true
-      }
-    ]
-  },
-  {
-    id: 'cust-unity-9904',
-    name: 'Dr. Julian Croft',
-    email: 'j.croft@highlandmed.org',
-    phone: '+1 (555) 234-9871',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-    loyaltyTier: 'Gold Cask',
-    loyaltyPoints: 1450,
-    totalSpent: 184500,
-    dateJoined: '2024-06-12',
-    emailNotifications: true,
-    smsNotifications: true,
-    spiritPreferences: ['Single Malt Whisky', 'Port Cask Finish', 'Cask Strength Bourbon'],
-    authProvider: 'google',
-    googleUid: '114829103948291039481',
-    googleEmail: 'j.croft@highlandmed.org',
-    googleDisplayName: 'Dr. Julian Croft',
-    googlePhotoUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-    isEmailVerified: true,
-    lastLoginAt: '2026-09-01T09:15:22Z',
-    accountStatus: 'active',
-    adminNotes: 'Enrolled in private cellar reserve club. Pre-ordered Cask 2008 allocation.',
-    addresses: [
-      {
-        id: 'addr-julian-01',
-        fullName: 'Dr. Julian Croft',
-        street: '142 Queen Anne Hill Court',
-        city: 'Boston',
-        state: 'MA',
-        zipCode: '02116',
-        country: 'United States',
-        phone: '+1 (555) 234-9871',
-        isDefault: true
-      }
-    ]
-  }
-];
+export const demoCustomers: CustomerUser[] = [];
 
-export const initialOrders: Order[] = [
-  {
-    id: 'ord-9921',
-    orderNumber: 'ZUS-2026-9921',
-    date: '2026-08-28T14:20:00Z',
-    status: 'Batch Sealed',
-    items: [
-      {
-        product: initialProducts[0],
-        quantity: 1,
-        giftBox: true,
-        customEngraving: 'To Arthur - Vintage Fellowship 2026'
-      },
-      {
-        product: initialProducts[2],
-        quantity: 2,
-        giftBox: false
-      }
-    ],
-    subtotal: 24500,
-    discount: 2000,
-    giftBoxFee: 1200,
-    shipping: 0,
-    tax: 1955,
-    total: 25655,
-    payment: {
-      type: 'card',
-      cardLast4: '4242',
-      cardBrand: 'Visa Signature',
-      transactionId: 'txn_unity_live_99881144',
-      paidAt: '2026-08-28T14:21:10Z'
-    },
-    shippingAddress: initialCustomer.addresses[0],
-    trackingNumber: '1Z9999999999999999',
-    carrier: 'Spirits Express Priority Carrier',
-    ageConfirmed: true,
-    loyaltyPointsEarned: 320,
-    loyaltyPointsUsed: 250,
-    notes: 'Adult signature strictly required upon delivery.'
-  },
-  {
-    id: 'ord-9840',
-    orderNumber: 'ZUS-2026-9840',
-    date: '2026-08-10T11:05:00Z',
-    status: 'Delivered',
-    items: [
-      {
-        product: initialProducts[1],
-        quantity: 1,
-        giftBox: false
-      },
-      {
-        product: initialProducts[4],
-        quantity: 1,
-        giftBox: true,
-        customEngraving: 'Ancestral Smoke'
-      }
-    ],
-    subtotal: 21300,
-    discount: 0,
-    giftBoxFee: 1200,
-    shipping: 450,
-    tax: 1893,
-    total: 24843,
-    payment: {
-      type: 'apple_pay',
-      transactionId: 'txn_apple_pay_8712361',
-      paidAt: '2026-08-10T11:05:44Z'
-    },
-    shippingAddress: initialCustomer.addresses[0],
-    trackingNumber: '1Z8888888888888888',
-    carrier: 'FedEx Alcohol Special Services',
-    ageConfirmed: true,
-    loyaltyPointsEarned: 323,
-    loyaltyPointsUsed: 0
-  }
-];
+export const initialOrders: Order[] = [];
 
 export const initialBlogPosts: BlogPost[] = [
   {
@@ -1284,9 +1060,9 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-01',
     productId: 'spirit-01',
-    userId: 'cust-demo-1',
-    userName: 'Lord Arthur Sterling',
-    userEmail: 'arthur.sterling@mayfairclub.co.uk',
+    userId: 'rev-patron-01',
+    userName: 'A. Sterling (Verified Patron)',
+    userEmail: 'patron.sterling@casksociety.com',
     userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     rating: 5,
     title: 'The benchmark for Speyside PX maturation',
@@ -1301,9 +1077,9 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-02',
     productId: 'spirit-01',
-    userId: 'cust-demo-2',
-    userName: 'Elena Rostova',
-    userEmail: 'elena.rostova@sommelier-guild.org',
+    userId: 'rev-patron-02',
+    userName: 'Elena R. (Sommelier Guild)',
+    userEmail: 'e.rostova@sommelier-guild.org',
     userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     rating: 5,
     title: 'Velvety honeycomb with subtle espresso finish',
@@ -1318,8 +1094,8 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-03',
     productId: 'spirit-01',
-    userId: 'cust-demo-3',
-    userName: 'Marcus Vance',
+    userId: 'rev-patron-03',
+    userName: 'Marcus V. (Whisky Journal)',
     userEmail: 'm.vance@whiskyjournal.com',
     userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
     rating: 5,
@@ -1335,8 +1111,8 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-04',
     productId: 'spirit-02',
-    userId: 'cust-demo-4',
-    userName: 'Garrett Holcomb',
+    userId: 'rev-patron-04',
+    userName: 'Garrett H. (Bluegrass Spirits)',
     userEmail: 'garrett@bluegrass-spirits.net',
     userAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=200&q=80',
     rating: 5,
@@ -1352,9 +1128,9 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-05',
     productId: 'spirit-02',
-    userId: 'cust-demo-1',
-    userName: 'Lord Arthur Sterling',
-    userEmail: 'arthur.sterling@mayfairclub.co.uk',
+    userId: 'rev-patron-01',
+    userName: 'A. Sterling (Verified Patron)',
+    userEmail: 'patron.sterling@casksociety.com',
     userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
     rating: 5,
     title: 'Remarkable viscosity and charred maple depth',
@@ -1369,9 +1145,9 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-06',
     productId: 'spirit-03',
-    userId: 'cust-demo-2',
-    userName: 'Elena Rostova',
-    userEmail: 'elena.rostova@sommelier-guild.org',
+    userId: 'rev-patron-02',
+    userName: 'Elena R. (Sommelier Guild)',
+    userEmail: 'e.rostova@sommelier-guild.org',
     userAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
     rating: 5,
     title: 'Elegant maritime campfire smoke and honeyed malt',
@@ -1386,7 +1162,7 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-07',
     productId: 'spirit-04',
-    userId: 'cust-demo-5',
+    userId: 'rev-patron-05',
     userName: 'Claire Dupont',
     userEmail: 'claire@botanical-journal.fr',
     userAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
@@ -1403,8 +1179,8 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-08',
     productId: 'spirit-05',
-    userId: 'cust-demo-3',
-    userName: 'Marcus Vance',
+    userId: 'rev-patron-03',
+    userName: 'Marcus V. (Whisky Journal)',
     userEmail: 'm.vance@whiskyjournal.com',
     userAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
     rating: 5,
@@ -1420,8 +1196,8 @@ export const initialReviews: ProductReview[] = [
   {
     id: 'rev-09',
     productId: 'spirit-06',
-    userId: 'cust-demo-4',
-    userName: 'Garrett Holcomb',
+    userId: 'rev-patron-04',
+    userName: 'Garrett H. (Bluegrass Spirits)',
     userEmail: 'garrett@bluegrass-spirits.net',
     userAvatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=200&q=80',
     rating: 5,
@@ -1631,68 +1407,7 @@ export const initialBallotAllocations: BallotAllocation[] = [
   }
 ];
 
-export const initialBallotEntries: BallotEntry[] = [
-  {
-    id: 'entry-demo-01',
-    allocationId: 'ballot-alloc-01',
-    allocationTitle: 'Unity 28-Year Private Cask Mizunara Finish Single Malt',
-    productName: 'Unity 28-Year Private Cask Mizunara Single Malt',
-    bottlePrice: 39500,
-    customerId: 'cust-unity-9901',
-    customerName: 'Lord Arthur Sterling',
-    customerEmail: 'arthur.sterling@casksociety.com',
-    customerPhone: '+1 (555) 392-8812',
-    loyaltyTier: 'Gold Cask',
-    bottlesRequested: 2,
-    preferredBottleNumbers: [7, 42, 88],
-    collectorNotes: 'Adding to my private Speyside library and vertical tasting collection.',
-    ticketNumber: 'BAL-2026-MZ-007',
-    entrantNumber: 7,
-    status: 'selected_winner',
-    registeredAt: '2026-08-16T14:20:00.000Z',
-    selectedAt: '2026-08-30T18:00:00.000Z',
-    claimDeadline: '2026-09-10T23:59:59.000Z',
-    assignedBottleNumbers: ['007/148', '008/148']
-  },
-  {
-    id: 'entry-demo-02',
-    allocationId: 'ballot-alloc-02',
-    allocationTitle: 'Unity Master’s 15-Year Hazmat Proof Single Barrel Bourbon',
-    productName: 'Unity Master’s 15-Year Hazmat Proof Bourbon',
-    bottlePrice: 25600,
-    customerId: 'cust-unity-9901',
-    customerName: 'Lord Arthur Sterling',
-    customerEmail: 'arthur.sterling@casksociety.com',
-    customerPhone: '+1 (555) 392-8812',
-    loyaltyTier: 'Gold Cask',
-    bottlesRequested: 1,
-    preferredBottleNumbers: [9],
-    collectorNotes: 'Looking forward to comparing with Batch #09.',
-    ticketNumber: 'BAL-2026-HZ-042',
-    entrantNumber: 42,
-    status: 'registered',
-    registeredAt: '2026-08-22T09:15:00.000Z'
-  },
-  {
-    id: 'entry-demo-03',
-    allocationId: 'ballot-alloc-01',
-    allocationTitle: 'Unity 28-Year Private Cask Mizunara Finish Single Malt',
-    productName: 'Unity 28-Year Private Cask Mizunara Single Malt',
-    bottlePrice: 39500,
-    customerId: 'cust-unity-9902',
-    customerName: 'Elena Rostova',
-    customerEmail: 'elena.rostova@spiritsguild.org',
-    customerPhone: '+1 (555) 842-1920',
-    loyaltyTier: 'Master Distiller Circle',
-    bottlesRequested: 1,
-    preferredBottleNumbers: [1, 28],
-    collectorNotes: 'Private Mayfair guild cellar allocation.',
-    ticketNumber: 'BAL-2026-MZ-088',
-    entrantNumber: 88,
-    status: 'registered',
-    registeredAt: '2026-08-17T11:05:00.000Z'
-  }
-];
+export const initialBallotEntries: BallotEntry[] = [];
 
 export const initialBottomNavbarConfig: BottomNavbarCustomizationConfig = {
   enabled: true,
