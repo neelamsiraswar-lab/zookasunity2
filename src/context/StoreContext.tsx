@@ -232,7 +232,9 @@ import {
   subscribeToCloudLetterheads,
   saveCloudLetterheadDocument,
   deleteCloudLetterheadDocument,
-  subscribeToCloudLetterheadDocuments
+  subscribeToCloudLetterheadDocuments,
+  loginWithGoogleFirebase,
+  logoutFirebase
 } from '../lib/firebase';
 
 export type { AppTab };
@@ -305,6 +307,7 @@ interface StoreContextType {
   openAuthModal: (tab?: 'login' | 'register' | 'demo', redirectTab?: AppTab) => void;
   closeAuthModal: () => void;
   loginCustomer: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   registerCustomer: (details: {
     name: string;
     email: string;
@@ -597,9 +600,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isCustomerLoggedIn, setIsCustomerLoggedIn] = useState<boolean>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_is_logged_in`);
-      return saved !== null ? saved === 'true' : true;
+      return saved === 'true';
     } catch {
-      return true;
+      return false;
     }
   });
 
@@ -1448,11 +1451,54 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: true };
   };
 
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await loginWithGoogleFirebase();
+      if (res.success && res.user) {
+        const u = res.user;
+        const email = u.email || 'patron@example.com';
+        const name = u.displayName || email.split('@')[0];
+        const profile: CustomerUser = {
+          id: `cust-g-${u.uid}`,
+          name: name,
+          email: email.toLowerCase(),
+          phone: u.phoneNumber || '+1 (555) 012-3456',
+          avatar: u.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+          loyaltyTier: 'Silver Cask',
+          loyaltyPoints: 100,
+          totalSpent: 0,
+          dateJoined: new Date().toISOString().split('T')[0],
+          emailNotifications: true,
+          smsNotifications: false,
+          spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon'],
+          addresses: []
+        };
+        setCustomer(profile);
+        setIsCustomerLoggedIn(true);
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'true');
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(profile));
+        } catch (_) {}
+        saveCloudCustomer(profile).catch(e => console.warn('Cloud customer google save note:', e));
+        if (authModalRedirectTab) {
+          setActiveTab(authModalRedirectTab);
+          setAuthModalRedirectTab(null);
+        }
+        setIsAuthModalOpen(false);
+        return { success: true };
+      }
+      return { success: false, error: res.error || 'Google sign-in was canceled or unavailable.' };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Google sign-in error.' };
+    }
+  };
+
   const logoutCustomer = async () => {
     setIsCustomerLoggedIn(false);
     try {
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'false');
     } catch (_) {}
+    await logoutFirebase();
   };
 
   const switchCustomerAccount = (customerId: string) => {
@@ -2025,6 +2071,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         openAuthModal,
         closeAuthModal,
         loginCustomer,
+        loginWithGoogle,
         registerCustomer,
         logoutCustomer,
         switchCustomerAccount,

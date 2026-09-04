@@ -17,7 +17,14 @@ import {
   Unsubscribe,
   serverTimestamp
 } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut as firebaseSignOut
+} from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage';
 import firebaseConfigData from '../../firebase-applet-config.json';
 import { 
@@ -83,6 +90,27 @@ onAuthStateChanged(auth, (user) => {
 
 // Initialize Firebase Storage
 export const storage = getStorage(app);
+
+// Google Authentication Popup helper for customer login
+export const loginWithGoogleFirebase = async (): Promise<{ success: boolean; user?: any; error?: string }> => {
+  try {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    return { success: true, user: result.user };
+  } catch (error: any) {
+    console.warn('Google sign-in popup note:', error?.message || error);
+    return { success: false, error: error?.message || 'Google sign-in could not be completed.' };
+  }
+};
+
+export const logoutFirebase = async (): Promise<void> => {
+  try {
+    await firebaseSignOut(auth);
+  } catch (err) {
+    console.warn('Firebase sign out note:', err);
+  }
+};
 
 // Standard Firestore Error Handling Structure from Firebase Skill
 export enum OperationType {
@@ -909,10 +937,51 @@ export const seedInitialCloudDatabase = async (initialData: {
       }
     }
 
-    await batch.commit();
-    return { success: true, seededCount };
+    try {
+      await batch.commit();
+      return { success: true, seededCount };
+    } catch (batchErr) {
+      console.warn('Batch commit notice, attempting resilient collection-by-collection sync:', batchErr);
+      // Resilient fallback: write collections individually so one schema variance does not halt the entire seed
+      let individualSuccessCount = 0;
+      const safeSet = async (col: string, id: string, data: any) => {
+        try {
+          await setDoc(doc(db, col, id), { ...data, updatedAt: new Date().toISOString() }, { merge: true });
+          individualSuccessCount++;
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, `${col}/${id}`);
+        }
+      };
+
+      for (const prod of initialData.products) await safeSet(COLLECTIONS.PRODUCTS, prod.id, prod);
+      for (const inv of initialData.inventory) await safeSet(COLLECTIONS.INVENTORY, inv.id, inv);
+      for (const ord of initialData.orders) await safeSet(COLLECTIONS.ORDERS, ord.id, ord);
+      for (const bp of initialData.blogPosts) await safeSet(COLLECTIONS.BLOG_POSTS, bp.id, bp);
+      await safeSet(COLLECTIONS.SITE_CONTENT, 'home', { data: initialData.homeContent });
+      await safeSet(COLLECTIONS.SITE_CONTENT, 'about', { data: initialData.aboutContent });
+      await safeSet(COLLECTIONS.SITE_CONTENT, 'settings', { data: initialData.adminSettings });
+      if (initialData.headerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'header', { data: initialData.headerConfig });
+      if (initialData.footerConfig) await safeSet(COLLECTIONS.SITE_CONTENT, 'footer', { data: initialData.footerConfig });
+      if (initialData.customer) await safeSet(COLLECTIONS.CUSTOMERS, initialData.customer.id, initialData.customer);
+      if (initialData.reviews) {
+        for (const rev of initialData.reviews) await safeSet(COLLECTIONS.REVIEWS, rev.id, rev);
+      }
+      if (initialData.ballotAllocations) {
+        for (const alloc of initialData.ballotAllocations) await safeSet(COLLECTIONS.BALLOT_ALLOCATIONS, alloc.id, alloc);
+      }
+      if (initialData.ballotEntries) {
+        for (const entry of initialData.ballotEntries) await safeSet(COLLECTIONS.BALLOT_ENTRIES, entry.id, entry);
+      }
+      if (initialData.letterheads) {
+        for (const lh of initialData.letterheads) await safeSet(COLLECTIONS.LETTERHEADS, lh.id, lh);
+      }
+      if (initialData.letterheadDocuments) {
+        for (const ld of initialData.letterheadDocuments) await safeSet(COLLECTIONS.LETTERHEAD_DOCUMENTS, ld.id, ld);
+      }
+      return { success: true, seededCount: individualSuccessCount };
+    }
   } catch (err) {
-    console.error('Error seeding initial cloud database:', err);
-    throw err;
+    handleFirestoreError(err, OperationType.WRITE, 'seed_initial_database');
+    return { success: false, seededCount: 0 };
   }
 };

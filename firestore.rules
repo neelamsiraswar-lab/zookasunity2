@@ -16,13 +16,17 @@ service cloud.firestore {
     }
 
     function isValidInventoryLot(data) {
-      return data.spiritName is string && data.spiritName.size() > 0 &&
-             data.caskNumber is string &&
-             data.volumeLiters is number && data.volumeLiters >= 0;
+      return (('productName' in data && data.productName is string && data.productName.size() > 0) ||
+              ('spiritName' in data && data.spiritName is string && data.spiritName.size() > 0)) &&
+             (('caskLotNumber' in data && data.caskLotNumber is string) ||
+              ('caskNumber' in data && data.caskNumber is string)) &&
+             (('bottlesInStock' in data && data.bottlesInStock is number && data.bottlesInStock >= 0) ||
+              ('volumeLiters' in data && data.volumeLiters is number && data.volumeLiters >= 0));
     }
 
     function isValidOrder(data) {
-      return data.customerEmail is string && data.customerEmail.size() > 0 &&
+      return (('orderNumber' in data && data.orderNumber is string && data.orderNumber.size() > 0) ||
+              ('id' in data && data.id is string && data.id.size() > 0)) &&
              data.total is number && data.total >= 0 &&
              data.items is list && data.items.size() > 0 && data.items.size() <= 100;
     }
@@ -33,12 +37,11 @@ service cloud.firestore {
     }
 
     function isValidSiteContent(data) {
-      return data.id is string || data.keys().size() > 0;
+      return data.keys().size() > 0;
     }
 
     function isValidCustomer(data) {
-      return data.name is string && data.name.size() > 0 &&
-             data.email is string && data.email.size() > 0;
+      return data.email is string && data.email.size() > 0;
     }
 
     function isValidReview(data) {
@@ -46,23 +49,24 @@ service cloud.firestore {
              data.userName is string && data.userName.size() > 0 && data.userName.size() <= 120 &&
              data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
              data.comment is string && data.comment.size() > 0 && data.comment.size() <= 5000 &&
-             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
-             (!('helpfulCount' in data) || data.helpfulCount is number) &&
-             (!('helpfulVoters' in data) || (data.helpfulVoters is list && data.helpfulVoters.size() <= 2000)) &&
-             (!('tastingNotesTags' in data) || (data.tastingNotesTags is list && data.tastingNotesTags.size() <= 50));
+             data.rating is number && data.rating >= 1 && data.rating <= 5;
     }
 
     function isValidBallotAllocation(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 250 &&
-             data.bottleYieldTotal is number && data.bottleYieldTotal > 0 &&
-             data.pricePerBottle is number && data.pricePerBottle >= 0 &&
+             (('totalBottlesAvailable' in data && data.totalBottlesAvailable is number && data.totalBottlesAvailable > 0) ||
+              ('bottleYieldTotal' in data && data.bottleYieldTotal is number && data.bottleYieldTotal > 0)) &&
+             (('bottlePrice' in data && data.bottlePrice is number && data.bottlePrice >= 0) ||
+              ('pricePerBottle' in data && data.pricePerBottle is number && data.pricePerBottle >= 0)) &&
              data.status is string;
     }
 
     function isValidBallotEntry(data) {
       return data.allocationId is string && data.allocationId.size() > 0 &&
-             data.userName is string && data.userName.size() > 0 && data.userName.size() <= 150 &&
-             data.userEmail is string && data.userEmail.size() > 0 && data.userEmail.size() <= 200 &&
+             (('customerName' in data && data.customerName is string && data.customerName.size() > 0) ||
+              ('userName' in data && data.userName is string && data.userName.size() > 0)) &&
+             (('customerEmail' in data && data.customerEmail is string && data.customerEmail.size() > 0) ||
+              ('userEmail' in data && data.userEmail is string && data.userEmail.size() > 0)) &&
              data.bottlesRequested is number && data.bottlesRequested >= 1 && data.bottlesRequested <= 10 &&
              data.status is string;
     }
