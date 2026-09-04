@@ -89,6 +89,12 @@ service cloud.firestore {
              data.status is string;
     }
 
+    function isValidDriveMedia(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 250 &&
+             data.url is string && data.url.size() > 0 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 50));
+    }
+
     // 1. Products Catalog
     match /products/{productId} {
       allow read: if true;
@@ -171,6 +177,13 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isValidId(docId) && isValidLetterheadDocument(request.resource.data);
       allow delete: if isValidId(docId);
+    }
+
+    // 12. Media Drive Assets & Uploads
+    match /drive_media/{mediaId} {
+      allow read: if true;
+      allow create, update: if isValidId(mediaId) && isValidDriveMedia(request.resource.data);
+      allow delete: if isValidId(mediaId);
     }
   }
 }

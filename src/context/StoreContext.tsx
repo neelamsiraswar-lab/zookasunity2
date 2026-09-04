@@ -28,7 +28,10 @@ import {
   AppTab,
   LetterheadTemplate,
   LetterheadDocument,
-  CompanyDetails
+  CompanyDetails,
+  DriveAssetItem,
+  DriveAssetTag,
+  CarouselSlide
 } from '../types';
 import {
   initialProducts,
@@ -51,6 +54,7 @@ import {
   initialLetterheadDocuments,
   initialCompanyDetails
 } from '../data/initialLetterheadData';
+import { initialDriveAssets } from '../data/initialDriveAssets';
 
 export const emptyCustomer: CustomerUser = {
   id: '',
@@ -252,8 +256,18 @@ import {
   logoutFirebase,
   subscribeToCloudCustomers,
   getCloudCustomers,
-  deleteCloudCustomer
+  deleteCloudCustomer,
+  getCloudDriveMedia,
+  saveCloudDriveMedia,
+  deleteCloudDriveMedia,
+  subscribeToCloudDriveMedia,
+  optimizeImageFile
 } from '../lib/firebase';
+import {
+  saveAssetToLocalVault,
+  getAllAssetsFromLocalVault,
+  deleteAssetFromLocalVault
+} from '../lib/mediaStorage';
 
 export type { AppTab };
 
@@ -415,6 +429,16 @@ interface StoreContextType {
   saveLetterheadDocument: (document: LetterheadDocument) => Promise<void>;
   deleteLetterheadDocument: (documentId: string) => Promise<void>;
   getLetterheadTemplate: (templateId: string) => LetterheadTemplate | undefined;
+
+  // Media Drive & Digital Assets Management
+  driveAssets: DriveAssetItem[];
+  addDriveAsset: (asset: Omit<DriveAssetItem, 'id' | 'uploadedAt'> & { id?: string; uploadedAt?: string }) => Promise<DriveAssetItem>;
+  deleteDriveAsset: (id: string) => Promise<boolean>;
+  updateDriveAsset: (id: string, updates: Partial<DriveAssetItem>) => Promise<boolean>;
+  uploadMediaToDrive: (file: File, tag?: DriveAssetItem['tag'], customName?: string) => Promise<DriveAssetItem>;
+  applyDriveAssetToLogo: (url: string) => Promise<void>;
+  applyDriveAssetToBanner: (url: string, heading?: string) => Promise<void>;
+  applyDriveAssetToProduct: (productId: string, url: string) => Promise<void>;
 
   // Reset & Re-seed demo data
   resetAllData: () => void;
@@ -635,6 +659,31 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
+  const [driveAssets, setDriveAssets] = useState<DriveAssetItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_drive_assets`);
+      return saved ? JSON.parse(saved) : initialDriveAssets;
+    } catch {
+      return initialDriveAssets;
+    }
+  });
+
+  // Load IndexedDB media vault assets on initial mount to ensure zero data loss
+  useEffect(() => {
+    getAllAssetsFromLocalVault().then((localItems) => {
+      if (localItems && localItems.length > 0) {
+        setDriveAssets((prev) => {
+          const map = new Map<string, DriveAssetItem>();
+          prev.forEach((item) => map.set(item.id, item));
+          localItems.forEach((item) => map.set(item.id, item));
+          return Array.from(map.values()).sort(
+            (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+          );
+        });
+      }
+    });
+  }, []);
+
   const [activeBallotModal, setActiveBallotModal] = useState<BallotAllocation | null>(null);
 
   // Customer Session & Login State
@@ -746,6 +795,10 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(companyDetails)); } catch (_) {}
   }, [companyDetails]);
 
+  useEffect(() => {
+    try { localStorage.setItem(`${LOCAL_STORAGE_KEY}_drive_assets`, JSON.stringify(driveAssets)); } catch (_) {}
+  }, [driveAssets]);
+
   // ==========================================
   // REAL-TIME FIRESTORE SUBSCRIPTIONS & SYNC
   // ==========================================
@@ -762,6 +815,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     let unsubBallotEntries: () => void = () => {};
     let unsubLetterheads: () => void = () => {};
     let unsubLetterheadDocs: () => void = () => {};
+    let unsubDriveMedia: () => void = () => {};
 
     let hasReceivedInitialProducts = false;
 
@@ -905,6 +959,25 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           }
         });
 
+        // 12. Media Drive Assets Listener
+        unsubDriveMedia = subscribeToCloudDriveMedia((cloudMedia) => {
+          if (cloudMedia.length > 0) {
+            setDriveAssets(prev => {
+              const map = new Map<string, DriveAssetItem>();
+              prev.forEach(item => map.set(item.id, item));
+              cloudMedia.forEach(item => {
+                map.set(item.id, item);
+                saveAssetToLocalVault(item).catch(() => {});
+              });
+              return Array.from(map.values()).sort(
+                (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+              );
+            });
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
+        });
+
         setCloudSyncStatus('connected');
       } catch (err) {
         console.warn('Firebase init error, running in resilient fallback mode:', err);
@@ -927,6 +1000,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       unsubBallotEntries();
       unsubLetterheads();
       unsubLetterheadDocs();
+      unsubDriveMedia();
     };
   }, []);
 
@@ -966,7 +1040,34 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     fileOrDataUri: File | string,
     folder: 'products' | 'carousel' | 'heritage' | 'blog' | 'casks' = 'products'
   ): Promise<string> => {
-    return uploadImageToCloudStorage(fileOrDataUri, folder);
+    const url = await uploadImageToCloudStorage(fileOrDataUri, folder);
+
+    // Auto-catalog in Media Drive so image is immediately accessible in Drive tab
+    try {
+      const tag: DriveAssetTag =
+        folder === 'carousel' ? 'banners' :
+        folder === 'heritage' ? 'heritage' :
+        folder === 'blog' ? 'blog' :
+        folder === 'casks' ? 'casks' : 'products';
+
+      const fileName = typeof fileOrDataUri !== 'string' ? fileOrDataUri.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') : `${folder} asset ${new Date().toLocaleDateString()}`;
+      const driveItem: DriveAssetItem = {
+        id: `drive-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        name: fileName,
+        url,
+        tag,
+        sizeBytes: typeof fileOrDataUri !== 'string' ? fileOrDataUri.size : undefined,
+        mimeType: typeof fileOrDataUri !== 'string' ? fileOrDataUri.type : 'image/jpeg',
+        uploadedAt: new Date().toISOString(),
+        description: `Uploaded for ${folder} library`
+      };
+
+      setDriveAssets(prev => [driveItem, ...prev.filter(i => i.url !== url)]);
+      saveAssetToLocalVault(driveItem).catch(() => {});
+      saveCloudDriveMedia(driveItem).catch(() => {});
+    } catch (_) {}
+
+    return url;
   }, []);
 
   const setAgeVerified = (verified: boolean) => {
@@ -2147,6 +2248,155 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
            letterheadTemplates[0];
   }, [letterheadTemplates]);
 
+  // Media Drive Operations
+  const addDriveAsset = useCallback(async (asset: Omit<DriveAssetItem, 'id' | 'uploadedAt'> & { id?: string; uploadedAt?: string }): Promise<DriveAssetItem> => {
+    const newItem: DriveAssetItem = {
+      id: asset.id || `drive-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      name: asset.name || 'Untitled Distillery Asset',
+      url: asset.url,
+      tag: asset.tag || 'general',
+      sizeBytes: asset.sizeBytes,
+      mimeType: asset.mimeType || 'image/jpeg',
+      dimensions: asset.dimensions,
+      uploadedAt: asset.uploadedAt || new Date().toISOString(),
+      description: asset.description || ''
+    };
+
+    setDriveAssets(prev => [newItem, ...prev.filter(i => i.id !== newItem.id)]);
+    saveAssetToLocalVault(newItem).catch(() => {});
+    saveCloudDriveMedia(newItem).catch(e => console.warn('Cloud drive save notice:', e));
+    return newItem;
+  }, []);
+
+  const deleteDriveAsset = useCallback(async (id: string): Promise<boolean> => {
+    setDriveAssets(prev => prev.filter(item => item.id !== id));
+    deleteAssetFromLocalVault(id).catch(() => {});
+    try {
+      await deleteCloudDriveMedia(id);
+      return true;
+    } catch (e) {
+      console.warn('Cloud drive delete notice:', e);
+      return false;
+    }
+  }, []);
+
+  const updateDriveAsset = useCallback(async (id: string, updates: Partial<DriveAssetItem>): Promise<boolean> => {
+    let updatedItem: DriveAssetItem | null = null;
+    setDriveAssets(prev =>
+      prev.map(item => {
+        if (item.id === id) {
+          updatedItem = { ...item, ...updates };
+          return updatedItem;
+        }
+        return item;
+      })
+    );
+    if (updatedItem) {
+      saveAssetToLocalVault(updatedItem).catch(() => {});
+      saveCloudDriveMedia(updatedItem).catch(e => console.warn('Cloud drive update notice:', e));
+      return true;
+    }
+    return false;
+  }, []);
+
+  const uploadMediaToDrive = useCallback(async (
+    file: File,
+    tag: DriveAssetItem['tag'] = 'general',
+    customName?: string
+  ): Promise<DriveAssetItem> => {
+    const maxDim = tag === 'logos' ? 450 : tag === 'banners' ? 1100 : 850;
+    const optimized = await optimizeImageFile(file, maxDim, 0.82);
+    let finalUrl = optimized.dataUrl;
+
+    try {
+      const uploadPayload = optimized.file instanceof File
+        ? optimized.file
+        : new File([optimized.file], file.name, { type: file.type || 'image/jpeg' });
+      const cloudUrl = await uploadImageToCloudStorage(uploadPayload, 'products');
+      if (cloudUrl && !cloudUrl.startsWith('data:')) {
+        finalUrl = cloudUrl;
+      }
+    } catch (err) {
+      console.info('Cloud storage fallback to local dataUrl:', err);
+    }
+
+    const newAsset: DriveAssetItem = {
+      id: `drive-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      name: customName || file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' '),
+      url: finalUrl,
+      tag,
+      sizeBytes: optimized.sizeBytes || file.size,
+      mimeType: file.type || 'image/jpeg',
+      dimensions: { width: optimized.width, height: optimized.height },
+      uploadedAt: new Date().toISOString(),
+      description: `Uploaded from distillery console. Resolution ${optimized.width}x${optimized.height}px.`
+    };
+
+    setDriveAssets(prev => [newAsset, ...prev]);
+    saveAssetToLocalVault(newAsset).catch(() => {});
+    saveCloudDriveMedia(newAsset).catch(e => console.warn('Drive asset cloud save note:', e));
+    return newAsset;
+  }, []);
+
+  const applyDriveAssetToLogo = useCallback(async (url: string) => {
+    setHeaderConfig(prev => {
+      const updated = {
+        ...prev,
+        logoImageUrl: url,
+        logoType: 'image' as const,
+        logoUrl: url
+      };
+      saveCloudSiteContent('header', updated).catch(() => {});
+      return updated;
+    });
+
+    setCompanyDetails(prev => {
+      const updated = { ...prev, logoUrl: url };
+      saveCloudSiteContent('company_details', updated).catch(() => {});
+      return updated;
+    });
+
+    setAdminSettings(prev => {
+      const updated = { ...prev, companyLogo: url };
+      saveCloudSiteContent('settings', updated).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const applyDriveAssetToBanner = useCallback(async (url: string, heading?: string) => {
+    setHomeContent(prev => {
+      const newSlide: CarouselSlide = {
+        id: `slide-${Date.now()}`,
+        image: url,
+        heading: heading || 'Distillery Masterwork Collection',
+        subtitle: 'Rare single malts and small-batch spirits handcrafted on ancient copper pot stills.',
+        badge: 'Vault Highlight',
+        ctaText: 'Explore Cellar',
+        ctaAction: 'shop'
+      };
+      const updated = {
+        ...prev,
+        carouselSlides: [newSlide, ...(prev.carouselSlides || [])]
+      };
+      saveCloudSiteContent('home', updated).catch(() => {});
+      return updated;
+    });
+  }, []);
+
+  const applyDriveAssetToProduct = useCallback(async (productId: string, url: string) => {
+    setProducts(prev => {
+      const target = prev.find(p => p.id === productId);
+      if (!target) return prev;
+      const existingImages = Array.isArray(target.images) ? target.images : [];
+      const updated = {
+        ...target,
+        images: [url, ...existingImages.filter(i => i !== url)]
+      };
+      saveCloudProduct(updated).catch(() => {});
+      return prev.map(p => p.id === productId ? updated : p);
+    });
+  }, []);
+
   const resetAllData = () => {
     setProducts(initialProducts);
     setInventoryLots(initialInventoryLots);
@@ -2165,6 +2415,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setLetterheadTemplates(initialLetterheadTemplates);
     setLetterheadDocuments(initialLetterheadDocuments);
     setCompanyDetails(initialCompanyDetails);
+    setDriveAssets(initialDriveAssets);
     setCart([]);
     try { localStorage.clear(); } catch (_) {}
     // Reseed cloud
@@ -2287,6 +2538,14 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         saveLetterheadDocument,
         deleteLetterheadDocument,
         getLetterheadTemplate,
+        driveAssets,
+        addDriveAsset,
+        deleteDriveAsset,
+        updateDriveAsset,
+        uploadMediaToDrive,
+        applyDriveAssetToLogo,
+        applyDriveAssetToBanner,
+        applyDriveAssetToProduct,
         resetAllData,
         resetToDefaultData: resetAllData
       }}

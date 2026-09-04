@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore, AppTab, normalizeHeaderConfig } from '../../context/StoreContext';
 import { HeaderCustomizationConfig, HeaderNavItem } from '../../types';
 import { initialHeaderConfig } from '../../data/initialData';
+import { CloudImageUploader } from '../CloudImageUploader';
 import { 
   Flame, 
   Wine, 
@@ -317,15 +318,14 @@ export const HeaderCustomizer: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-stone-400 mb-1">Custom Logo Image URL (Optional)</label>
-                <input
-                  type="url"
-                  value={formData.logoImageUrl || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, logoImageUrl: e.target.value }))}
-                  className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-700 rounded-xl text-stone-100 text-xs focus:outline-none focus:border-amber-500"
-                  placeholder="https://images.unsplash.com/... or cloud asset URL"
+                <CloudImageUploader
+                  label="Custom Brand Logo Image (Upload, Cloud & Media Drive)"
+                  currentImageUrl={formData.logoImageUrl || ''}
+                  onImageUploaded={(url) => setFormData(prev => ({ ...prev, logoImageUrl: url }))}
+                  folder="products"
+                  helperText="Upload transparent PNG or pick from your Drive library. Leave empty to use geometric brand icon."
+                  onClear={() => setFormData(prev => ({ ...prev, logoImageUrl: '' }))}
                 />
-                <p className="text-[10px] text-stone-500 mt-1">Leave empty to use the geometric brand icon.</p>
               </div>
 
               <div className="pt-2 border-t border-stone-800 flex items-center justify-between">

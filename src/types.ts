@@ -792,3 +792,17 @@ export interface LetterheadDocument {
   createdAt: string;
   updatedAt: string;
 }
+
+export type DriveAssetTag = 'all' | 'products' | 'logos' | 'banners' | 'heritage' | 'blog' | 'casks' | 'general';
+
+export interface DriveAssetItem {
+  id: string;
+  name: string;
+  url: string;
+  tag: 'products' | 'logos' | 'banners' | 'heritage' | 'blog' | 'casks' | 'general';
+  sizeBytes?: number;
+  mimeType?: string;
+  dimensions?: { width: number; height: number };
+  uploadedAt: string;
+  description?: string;
+}

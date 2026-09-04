@@ -44,7 +44,8 @@ import {
   BallotEntry,
   LetterheadTemplate,
   LetterheadDocument,
-  CompanyDetails
+  CompanyDetails,
+  DriveAssetItem
 } from '../types';
 
 // Silence internal Firestore connection logs and transient retry warnings
@@ -185,26 +186,30 @@ export const COLLECTIONS = {
   BALLOT_ALLOCATIONS: 'ballot_allocations',
   BALLOT_ENTRIES: 'ballot_entries',
   LETTERHEADS: 'letterheads',
-  LETTERHEAD_DOCUMENTS: 'letterhead_documents'
+  LETTERHEAD_DOCUMENTS: 'letterhead_documents',
+  DRIVE_MEDIA: 'drive_media'
 } as const;
 
 // Helper: Client-side Image Optimization (Downsamples high-res local uploads to prevent Firestore document overflow and improve upload speeds)
 export const optimizeImageFile = async (
   file: File,
   maxDimension = 900,
-  quality = 0.88
-): Promise<{ file: File | Blob; dataUrl: string }> => {
+  quality = 0.82
+): Promise<{ file: File | Blob; dataUrl: string; width: number; height: number; sizeBytes: number }> => {
   return new Promise((resolve) => {
     if (typeof window === 'undefined') {
-      resolve({ file, dataUrl: '' });
+      resolve({ file, dataUrl: '', width: 0, height: 0, sizeBytes: file.size });
       return;
     }
 
     // Pass SVG directly
     if (file.type === 'image/svg+xml') {
       const reader = new FileReader();
-      reader.onload = () => resolve({ file, dataUrl: (reader.result as string) || '' });
-      reader.onerror = () => resolve({ file, dataUrl: '' });
+      reader.onload = () => {
+        const dataUrl = (reader.result as string) || '';
+        resolve({ file, dataUrl, width: 256, height: 256, sizeBytes: file.size });
+      };
+      reader.onerror = () => resolve({ file, dataUrl: '', width: 0, height: 0, sizeBytes: file.size });
       reader.readAsDataURL(file);
       return;
     }
@@ -216,6 +221,7 @@ export const optimizeImageFile = async (
         let width = img.width;
         let height = img.height;
 
+        // Determine target dimensions
         if (width > maxDimension || height > maxDimension) {
           if (width > height) {
             height = Math.round((height * maxDimension) / width);
@@ -227,41 +233,80 @@ export const optimizeImageFile = async (
         }
 
         const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = Math.max(1, width);
+        canvas.height = Math.max(1, height);
         const ctx = canvas.getContext('2d');
+        
         if (ctx) {
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, width, height);
+
+          // Test WebP and JPEG/PNG
           const isPng = file.type === 'image/png';
-          const outputType = isPng ? 'image/png' : 'image/jpeg';
-          const dataUrl = canvas.toDataURL(outputType, quality);
+          let outputType = 'image/webp';
+          let currentQuality = quality;
+          let dataUrl = '';
+
+          try {
+            dataUrl = canvas.toDataURL(outputType, currentQuality);
+            // If browser fell back to PNG from webp and it's large, switch to jpeg
+            if (dataUrl.startsWith('data:image/png') && !isPng) {
+              outputType = 'image/jpeg';
+              dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+            }
+          } catch {
+            outputType = 'image/jpeg';
+            dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+          }
+
+          // Strict size constraint: Ensure dataURL is under 150KB (< 200,000 chars)
+          // to prevent Firestore 1MB quota issues or memory spikes
+          let iterations = 0;
+          while (dataUrl.length > 180000 && iterations < 3) {
+            iterations++;
+            currentQuality = Math.max(0.55, currentQuality - 0.12);
+            width = Math.round(width * 0.85);
+            height = Math.round(height * 0.85);
+            canvas.width = Math.max(1, width);
+            canvas.height = Math.max(1, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            try {
+              dataUrl = canvas.toDataURL(outputType, currentQuality);
+            } catch {
+              dataUrl = canvas.toDataURL('image/jpeg', currentQuality);
+            }
+          }
+
           canvas.toBlob(
             (blob) => {
               if (blob) {
-                const optimizedFile = new File([blob], file.name, { type: outputType });
-                resolve({ file: optimizedFile, dataUrl });
+                const ext = outputType === 'image/webp' ? '.webp' : outputType === 'image/png' ? '.png' : '.jpg';
+                const optimizedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ext, { type: outputType });
+                resolve({ file: optimizedFile, dataUrl, width, height, sizeBytes: blob.size });
               } else {
-                resolve({ file, dataUrl });
+                resolve({ file, dataUrl, width, height, sizeBytes: Math.round(dataUrl.length * 0.75) });
               }
             },
             outputType,
-            quality
+            currentQuality
           );
         } else {
-          resolve({ file, dataUrl: (e.target?.result as string) || '' });
+          const rawUrl = (e.target?.result as string) || '';
+          resolve({ file, dataUrl: rawUrl, width: img.width, height: img.height, sizeBytes: file.size });
         }
       };
       img.onerror = () => {
-        resolve({ file, dataUrl: (e.target?.result as string) || '' });
+        resolve({ file, dataUrl: (e.target?.result as string) || '', width: 0, height: 0, sizeBytes: file.size });
       };
       img.src = (e.target?.result as string) || '';
     };
-    reader.onerror = () => resolve({ file, dataUrl: '' });
+    reader.onerror = () => resolve({ file, dataUrl: '', width: 0, height: 0, sizeBytes: file.size });
     reader.readAsDataURL(file);
   });
 };
 
-// Storage helper: Upload Image (File or Data URL) to Cloud Storage with fallback
+// Storage helper: Upload Image (File or Data URL) to Cloud Storage with safe timeout and immediate fallback
 export const uploadImageToCloudStorage = async (
   fileOrBase64: File | string,
   pathFolder: 'products' | 'carousel' | 'heritage' | 'blog' | 'casks' = 'products'
@@ -277,40 +322,61 @@ export const uploadImageToCloudStorage = async (
     } catch {
       // Fallback gracefully
     }
+  } else if (fileOrBase64.startsWith('data:')) {
+    fallbackDataUrl = fileOrBase64;
+  }
+
+  // If already an HTTP/HTTPS URL, return as is
+  if (typeof targetToUpload === 'string' && targetToUpload.startsWith('http')) {
+    return targetToUpload;
   }
 
   try {
     const filename = `${pathFolder}/${Date.now()}_${Math.random().toString(36).substring(7)}`;
     const storageRef = ref(storage, filename);
 
-    if (typeof targetToUpload === 'string') {
-      if (targetToUpload.startsWith('data:')) {
-        await uploadString(storageRef, targetToUpload, 'data_url');
+    // Enforce a strict 3500ms timeout on Cloud Storage so that network latency,
+    // CORS, or unconfigured storage buckets never hang the user's upload experience
+    const cloudUploadPromise = (async (): Promise<string> => {
+      if (typeof targetToUpload === 'string') {
+        if (targetToUpload.startsWith('data:')) {
+          await uploadString(storageRef, targetToUpload, 'data_url');
+          const downloadUrl = await getDownloadURL(storageRef);
+          return downloadUrl;
+        }
+        return targetToUpload;
+      } else {
+        await uploadBytes(storageRef, targetToUpload);
         const downloadUrl = await getDownloadURL(storageRef);
         return downloadUrl;
       }
-      return targetToUpload; // Already an external or hosted URL
-    } else {
-      await uploadBytes(storageRef, targetToUpload);
-      const downloadUrl = await getDownloadURL(storageRef);
-      return downloadUrl;
-    }
-  } catch (err) {
-    console.warn('Cloud Storage upload note (falling back to direct optimized URL/dataURI):', err);
-    if (typeof targetToUpload === 'string') {
-      return targetToUpload;
-    }
-    if (fallbackDataUrl) {
-      return fallbackDataUrl;
-    }
-    // Fallback: convert file to Base64
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve((reader.result as string) || '');
-      reader.onerror = reject;
-      reader.readAsDataURL(fileOrBase64 as File);
+    })();
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Cloud Storage timeout (fallback activated)')), 3500);
     });
+
+    const result = await Promise.race([cloudUploadPromise, timeoutPromise]);
+    if (result) return result;
+  } catch (err) {
+    console.info('Cloud Storage upload note (seamlessly using high-speed local data URI):', err);
   }
+
+  if (fallbackDataUrl) {
+    return fallbackDataUrl;
+  }
+
+  if (typeof targetToUpload === 'string') {
+    return targetToUpload;
+  }
+
+  // Final fallback: convert file to Base64
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string) || '');
+    reader.onerror = reject;
+    reader.readAsDataURL(fileOrBase64 as File);
+  });
 };
 
 // ==========================================
@@ -847,6 +913,61 @@ export const subscribeToCloudLetterheadDocuments = (callback: (documents: Letter
     }
   }, (err) => {
     handleFirestoreError(err, OperationType.LIST, COLLECTIONS.LETTERHEAD_DOCUMENTS);
+  });
+};
+
+// --- MEDIA DRIVE ASSETS ---
+export const getCloudDriveMedia = async (): Promise<DriveAssetItem[]> => {
+  try {
+    const q = query(collection(db, COLLECTIONS.DRIVE_MEDIA));
+    const snapshot = await getDocs(q);
+    const list: DriveAssetItem[] = [];
+    snapshot.forEach(docSnap => {
+      list.push(docSnap.data() as DriveAssetItem);
+    });
+    list.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    return list;
+  } catch (err) {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.DRIVE_MEDIA);
+    return [];
+  }
+};
+
+export const saveCloudDriveMedia = async (item: DriveAssetItem): Promise<void> => {
+  if (!item?.id) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.DRIVE_MEDIA, item.id);
+    await setDoc(docRef, { ...item, updatedAt: new Date().toISOString() }, { merge: true });
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `${COLLECTIONS.DRIVE_MEDIA}/${item.id}`);
+  }
+};
+
+export const deleteCloudDriveMedia = async (id: string): Promise<void> => {
+  if (!id) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.DRIVE_MEDIA, id);
+    await deleteDoc(docRef);
+  } catch (err) {
+    handleFirestoreError(err, OperationType.DELETE, `${COLLECTIONS.DRIVE_MEDIA}/${id}`);
+  }
+};
+
+export const subscribeToCloudDriveMedia = (callback: (items: DriveAssetItem[]) => void): Unsubscribe => {
+  const q = query(collection(db, COLLECTIONS.DRIVE_MEDIA));
+  return onSnapshot(q, (snapshot) => {
+    if (!snapshot.empty) {
+      const list: DriveAssetItem[] = [];
+      snapshot.forEach(docSnap => {
+        list.push(docSnap.data() as DriveAssetItem);
+      });
+      list.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+      callback(list);
+    } else {
+      callback([]);
+    }
+  }, (err) => {
+    handleFirestoreError(err, OperationType.LIST, COLLECTIONS.DRIVE_MEDIA);
   });
 };
 

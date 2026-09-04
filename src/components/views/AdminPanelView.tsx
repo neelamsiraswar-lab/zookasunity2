@@ -83,8 +83,10 @@ import {
   Crown,
   Ticket,
   Smartphone,
-  Stamp
+  Stamp,
+  HardDrive
 } from 'lucide-react';
+import { MediaDriveAdmin } from '../admin/MediaDriveAdmin';
 
 export const AdminPanelView: React.FC = () => {
   const {
@@ -114,6 +116,7 @@ export const AdminPanelView: React.FC = () => {
     ballotEntries,
     letterheadDocuments,
     letterheadTemplates,
+    driveAssets,
     registeredCustomers,
     cloudSyncStatus,
     lastSyncedAt,
@@ -145,7 +148,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'drive' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -938,6 +941,7 @@ export const AdminPanelView: React.FC = () => {
           { id: 'users', label: `Registered Patrons & Google Logins (${registeredCustomers.length})`, icon: Users },
           { id: 'inventory', label: `Distiller Real-Time Cask Tracker (${inventoryLots.length})`, icon: Layers },
           { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
+          { id: 'drive', label: `Drive Media Cloud (${driveAssets?.length || 0})`, icon: HardDrive },
           { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
           { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
           { id: 'cms_letterheads', label: `Stationery & Letterheads (${letterheadDocuments?.length || 0})`, icon: Stamp },
@@ -2955,6 +2959,9 @@ export const AdminPanelView: React.FC = () => {
 
       {/* RARE ALLOCATIONS & BALLOT DRAWS */}
       {activeTab === 'ballots' && <BallotDrawsAdmin />}
+
+      {/* MEDIA DRIVE & CLOUD ASSET MANAGEMENT */}
+      {activeTab === 'drive' && <MediaDriveAdmin />}
 
       {/* LETTERHEAD & OFFICIAL STATIONERY CMS */}
       {activeTab === 'cms_letterheads' && <LetterheadManager />}

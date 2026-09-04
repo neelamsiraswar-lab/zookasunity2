@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { Upload, Image as ImageIcon, CheckCircle2, Loader2, Link, Sparkles, X, RefreshCw } from 'lucide-react';
+import { Upload, Image as ImageIcon, CheckCircle2, Loader2, Link, Sparkles, X, RefreshCw, HardDrive, Search } from 'lucide-react';
+import { optimizeImageFile } from '../lib/firebase';
 
 interface CloudImageUploaderProps {
   label?: string;
@@ -21,13 +22,15 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
   helperText = 'Upload high-resolution bottle, brand logo, or distillery imagery.',
   onClear
 }) => {
-  const { uploadMedia } = useStore();
+  const { uploadMedia, driveAssets } = useStore();
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [dragOver, setDragOver] = useState<boolean>(false);
-  const [mode, setMode] = useState<'upload' | 'url' | 'presets'>('upload');
+  const [mode, setMode] = useState<'upload' | 'drive' | 'url' | 'presets'>('upload');
   const [inputUrl, setInputUrl] = useState<string>(currentImageUrl || '');
   const [uploadSuccess, setUploadSuccess] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [driveFilter, setDriveFilter] = useState<string>('all');
+  const [driveSearch, setDriveSearch] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,29 +47,26 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
     setUploadSuccess(false);
 
     try {
-      // Create local preview immediately for fast feedback
-      const localPreview = URL.createObjectURL(file);
-      setInputUrl(localPreview);
-
       const resultUrl = await uploadMedia(file, folder);
-      onImageUploaded(resultUrl || localPreview);
-      setInputUrl(resultUrl || localPreview);
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3500);
+      if (resultUrl) {
+        onImageUploaded(resultUrl);
+        setInputUrl(resultUrl);
+        setUploadSuccess(true);
+        setTimeout(() => setUploadSuccess(false), 3500);
+      }
     } catch (err) {
       console.warn('Upload fallback note:', err);
-      // Even if network fails, load local image as data url so user is not blocked
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fallbackUrl = (e.target?.result as string) || '';
-        if (fallbackUrl) {
-          onImageUploaded(fallbackUrl);
-          setInputUrl(fallbackUrl);
+      try {
+        const optimized = await optimizeImageFile(file, folder === 'logos' ? 450 : 850, 0.82);
+        if (optimized.dataUrl) {
+          onImageUploaded(optimized.dataUrl);
+          setInputUrl(optimized.dataUrl);
           setUploadSuccess(true);
           setTimeout(() => setUploadSuccess(false), 3500);
         }
-      };
-      reader.readAsDataURL(file);
+      } catch {
+        setErrorMessage('Could not process image file. Please try another image.');
+      }
     } finally {
       setIsUploading(false);
     }
@@ -95,6 +95,12 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
     }
   };
 
+  const filteredDriveAssets = driveAssets.filter((asset) => {
+    const matchesSearch = asset.name.toLowerCase().includes(driveSearch.toLowerCase());
+    const matchesTag = driveFilter === 'all' || asset.tag === driveFilter;
+    return matchesSearch && matchesTag;
+  });
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -112,7 +118,17 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
               mode === 'upload' ? 'bg-amber-500 text-stone-950 font-bold' : 'text-stone-400 hover:text-stone-200'
             }`}
           >
-            Local Upload
+            Upload
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('drive')}
+            className={`px-2 py-0.5 rounded font-medium transition cursor-pointer flex items-center gap-1 ${
+              mode === 'drive' ? 'bg-amber-500 text-stone-950 font-bold' : 'text-stone-400 hover:text-stone-200'
+            }`}
+          >
+            <HardDrive className="w-3 h-3" />
+            <span>Drive ({driveAssets.length})</span>
           </button>
           <button
             type="button"
@@ -161,6 +177,7 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
             type="file"
             accept="image/*"
             className="hidden"
+            onClick={(e) => e.stopPropagation()}
             onChange={onFileChange}
           />
           
@@ -172,7 +189,7 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
           ) : uploadSuccess ? (
             <div className="py-3 flex flex-col items-center gap-1.5 text-emerald-400">
               <CheckCircle2 className="w-6 h-6" />
-              <span className="text-xs font-semibold">Logo Image Ready & Applied!</span>
+              <span className="text-xs font-semibold">Image Ready & Applied!</span>
             </div>
           ) : (
             <>
@@ -181,10 +198,10 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
               </div>
               <div>
                 <p className="text-xs font-semibold text-stone-200">
-                  Drop local logo file here or <span className="text-amber-400 underline">browse device files</span>
+                  Drop image file here or <span className="text-amber-400 underline">browse device files</span>
                 </p>
                 <p className="text-[11px] text-stone-500 mt-0.5">
-                  Supports PNG, JPG, WebP, SVG • Automatically optimized for letterhead & print
+                  Supports PNG, JPG, WebP, SVG • Automatically optimized for web & print
                 </p>
               </div>
             </>
@@ -192,7 +209,79 @@ export const CloudImageUploader: React.FC<CloudImageUploaderProps> = ({
         </div>
       )}
 
-      {/* Mode 2: Direct URL */}
+      {/* Mode 2: Media Drive Assets Library */}
+      {mode === 'drive' && (
+        <div className="bg-stone-950 border border-stone-800 rounded-xl p-3 space-y-2.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
+              <input
+                type="text"
+                value={driveSearch}
+                onChange={(e) => setDriveSearch(e.target.value)}
+                placeholder="Filter Drive assets..."
+                className="w-full pl-7 pr-2 py-1 text-[11px] bg-stone-900 border border-stone-800 rounded-lg text-stone-200 placeholder-stone-600 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <div className="flex items-center gap-1 overflow-x-auto text-[10px]">
+              {['all', 'products', 'logos', 'banners', 'heritage', 'casks'].map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => setDriveFilter(tag)}
+                  className={`px-2 py-0.5 rounded capitalize transition whitespace-nowrap cursor-pointer ${
+                    driveFilter === tag
+                      ? 'bg-amber-500 text-stone-950 font-bold'
+                      : 'text-stone-400 hover:text-stone-200 bg-stone-900'
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {filteredDriveAssets.length === 0 ? (
+            <div className="py-6 text-center text-stone-500 text-xs">
+              <HardDrive className="w-6 h-6 mx-auto mb-1 text-stone-600" />
+              <span>No matching Drive assets found.</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
+              {filteredDriveAssets.map((asset) => (
+                <button
+                  key={asset.id}
+                  type="button"
+                  onClick={() => {
+                    onImageUploaded(asset.url);
+                    setInputUrl(asset.url);
+                  }}
+                  className={`group relative aspect-square rounded-lg overflow-hidden border p-1 bg-stone-900 transition text-left cursor-pointer ${
+                    currentImageUrl === asset.url
+                      ? 'border-amber-400 ring-2 ring-amber-500/40 bg-amber-950/20'
+                      : 'border-stone-800 hover:border-stone-600'
+                  }`}
+                  title={asset.name}
+                >
+                  <img
+                    src={asset.url}
+                    alt={asset.name}
+                    className="w-full h-full object-contain group-hover:scale-105 transition"
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                  />
+                  <span className="absolute bottom-0 inset-x-0 bg-stone-950/85 px-1 py-0.5 text-[8px] text-stone-300 truncate text-center font-medium block">
+                    {asset.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mode 3: Direct URL */}
       {mode === 'url' && (
         <div className="flex gap-2">
           <div className="relative flex-1">
