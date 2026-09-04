@@ -1468,10 +1468,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     saveCloudCustomer(activeProfile).catch(e => console.warn('Cloud customer login save note:', e));
 
-    if (authModalRedirectTab) {
-      setActiveTab(authModalRedirectTab);
-      setAuthModalRedirectTab(null);
-    }
+    setActiveTab('home');
+    setAuthModalRedirectTab(null);
     setIsAuthModalOpen(false);
     return { success: true };
   };
@@ -1530,10 +1528,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     saveCloudCustomer(newCust).catch(e => console.warn('Cloud customer registration note:', e));
 
-    if (authModalRedirectTab) {
-      setActiveTab(authModalRedirectTab);
-      setAuthModalRedirectTab(null);
-    }
+    setActiveTab('home');
+    setAuthModalRedirectTab(null);
     setIsAuthModalOpen(false);
     return { success: true };
   };
@@ -1600,10 +1596,8 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(profile));
         } catch (_) {}
         saveCloudCustomer(profile).catch(e => console.warn('Cloud customer google save note:', e));
-        if (authModalRedirectTab) {
-          setActiveTab(authModalRedirectTab);
-          setAuthModalRedirectTab(null);
-        }
+        setActiveTab('home');
+        setAuthModalRedirectTab(null);
         setIsAuthModalOpen(false);
         return { success: true };
       }

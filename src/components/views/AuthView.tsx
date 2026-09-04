@@ -28,8 +28,17 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
     loginWithGoogle, 
     registerCustomer, 
     adminSettings,
-    setAgeVerified
+    setAgeVerified,
+    setActiveTab
   } = useStore();
+
+  const handleAdminCms = () => {
+    if (onAdminClick) {
+      onAdminClick();
+    } else {
+      setActiveTab('admin');
+    }
+  };
 
   const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
   
@@ -87,6 +96,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
         setErrorMessage(res.error || 'Unable to sign in. Please verify your email.');
       } else {
         setSuccessMessage('Welcome back! Loading your patron cellar...');
+        setActiveTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Authentication failed. Please try again.');
@@ -105,6 +116,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
         setErrorMessage(res.error || 'Google sign-in was canceled or unavailable.');
       } else {
         setSuccessMessage('Successfully authenticated with Google! Entering cellar...');
+        setActiveTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Google sign-in error occurred.');
@@ -145,6 +158,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
         setErrorMessage(res.error || 'Registration failed. Please try again.');
       } else {
         setSuccessMessage('Account created successfully! Welcome to Zookas Unity Spirits.');
+        setActiveTab('home');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Registration failed.');
@@ -189,6 +204,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
             <p className="text-xs text-stone-400 mt-1 max-w-md mx-auto">
               Please sign in or create your distillery patron account to enter the store, access member allocations, and manage orders.
             </p>
+            <div className="mt-3 flex justify-center">
+              <button
+                type="button"
+                onClick={handleAdminCms}
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 hover:text-amber-200 text-xs font-semibold transition cursor-pointer shadow-sm"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>Admin CMS Login</span>
+              </button>
+            </div>
           </div>
 
           {/* Tab Navigation */}
@@ -348,6 +373,24 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     <span>Continue with Google</span>
                   </button>
                 </div>
+
+                {/* Direct Admin CMS Portal Button */}
+                <div className="pt-2">
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-stone-800"></div>
+                    <span className="flex-shrink mx-2.5 text-[10px] text-stone-500 uppercase tracking-wider">Staff & CMS Access</span>
+                    <div className="flex-grow border-t border-stone-800"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAdminCms}
+                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-500/70 rounded-xl text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>Login to Admin CMS</span>
+                  </button>
+                </div>
               </form>
             )}
 
@@ -486,6 +529,24 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     </>
                   )}
                 </button>
+
+                {/* Direct Admin CMS Portal Button */}
+                <div className="pt-2">
+                  <div className="relative flex py-2 items-center">
+                    <div className="flex-grow border-t border-stone-800"></div>
+                    <span className="flex-shrink mx-2.5 text-[10px] text-stone-500 uppercase tracking-wider">Distillery Operations</span>
+                    <div className="flex-grow border-t border-stone-800"></div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAdminCms}
+                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-500/70 rounded-xl text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                    <span>Login to Admin CMS</span>
+                  </button>
+                </div>
               </form>
             )}
           </div>
@@ -514,11 +575,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
         <div className="mt-4 text-center">
           <button
             type="button"
-            onClick={onAdminClick}
-            className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-amber-400 transition cursor-pointer py-1 px-3 rounded-lg hover:bg-stone-900"
+            onClick={handleAdminCms}
+            className="inline-flex items-center gap-2 text-xs font-medium text-stone-400 hover:text-amber-300 transition cursor-pointer py-1.5 px-4 rounded-xl bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-amber-500/40 shadow-sm"
           >
-            <KeyRound className="w-3.5 h-3.5" />
-            <span>Distillery Staff & Master Distiller Portal (PIN Protected)</span>
+            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <span>Login to Admin CMS (Staff & Master Distiller Portal)</span>
           </button>
         </div>
       </main>
