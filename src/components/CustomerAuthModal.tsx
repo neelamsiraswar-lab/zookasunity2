@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../context/StoreContext';
-import { GoogleDomainAuthModal } from './GoogleDomainAuthModal';
 import { 
   X, 
   User, 
@@ -14,10 +13,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  Wine,
-  Globe,
-  ShieldAlert,
-  ExternalLink
+  Wine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -27,7 +23,6 @@ export const CustomerAuthModal: React.FC = () => {
     closeAuthModal, 
     authModalInitialTab, 
     loginCustomer, 
-    loginWithGoogle,
     registerCustomer
   } = useStore();
 
@@ -51,14 +46,6 @@ export const CustomerAuthModal: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Domain modal state
-  const [showDomainModal, setShowDomainModal] = useState<boolean>(false);
-  const [domainErrorInfo, setDomainErrorInfo] = useState<{
-    domain: string;
-    consoleUrl?: string;
-    projectId?: string;
-  } | null>(null);
 
   useEffect(() => {
     if (isAuthModalOpen) {
@@ -124,33 +111,6 @@ export const CustomerAuthModal: React.FC = () => {
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An unexpected error occurred during registration.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setErrorMsg(null);
-    setSuccessMsg(null);
-    setLoading(true);
-    try {
-      const res = await loginWithGoogle();
-      if (!res.success) {
-        if (res.isUnauthorizedDomain || res.errorCode === 'auth/unauthorized-domain' || res.error?.toLowerCase().includes('unauthorized domain')) {
-          setDomainErrorInfo({
-            domain: res.unauthorizedDomain || window.location.hostname || 'zookasunityspirits.in',
-            consoleUrl: res.consoleSettingsUrl,
-            projectId: res.projectId
-          });
-          setShowDomainModal(true);
-        }
-        setErrorMsg(res.error || 'Google sign-in was canceled or unavailable.');
-      } else {
-        setDomainErrorInfo(null);
-        setSuccessMsg('Successfully authenticated with Google!');
-      }
-    } catch (err: any) {
-      setErrorMsg(err?.message || 'Google sign-in error occurred.');
     } finally {
       setLoading(false);
     }
@@ -233,23 +193,9 @@ export const CustomerAuthModal: React.FC = () => {
           <div className="p-6 max-h-[75vh] overflow-y-auto space-y-5">
             {/* Feedback Alerts */}
             {errorMsg && (
-              <div className="p-3.5 bg-red-950/60 border border-red-800/60 rounded-xl text-red-200 text-xs flex flex-col gap-2">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400 mt-0.5" />
-                  <span className="leading-relaxed">{errorMsg}</span>
-                </div>
-                {domainErrorInfo && (
-                  <div className="pt-2 border-t border-red-900/60 flex items-center justify-between gap-2">
-                    <span className="text-[11px] text-amber-300 font-mono">zookasunityspirits.in</span>
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold transition cursor-pointer"
-                    >
-                      Fix Domain in Firebase
-                    </button>
-                  </div>
-                )}
+              <div className="p-3 bg-red-950/60 border border-red-800/60 rounded-xl text-red-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+                <span>{errorMsg}</span>
               </div>
             )}
 
@@ -272,7 +218,7 @@ export const CustomerAuthModal: React.FC = () => {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. patron@example.com"
+                      placeholder="e.g. arthur.sterling@casksociety.com"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full pl-10 pr-4 py-2.5 bg-stone-950 border border-stone-700/80 rounded-xl text-stone-100 placeholder-stone-500 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
@@ -315,43 +261,6 @@ export const CustomerAuthModal: React.FC = () => {
                   {loading ? 'Authenticating...' : 'Sign In to Account'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                <div className="pt-2">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-3 text-[11px] text-stone-500 uppercase tracking-wider">Or continue with</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800 border border-stone-700/80 rounded-xl text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-2.5 shadow-sm hover:border-amber-500/40 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
-                      <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
-                      <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z" />
-                      <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z" />
-                    </svg>
-                    <span>Continue with Google</span>
-                  </button>
-
-                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-amber-500/70" />
-                      <span>Domain: <strong className="text-stone-300 font-mono">zookasunityspirits.in</strong></span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition cursor-pointer font-medium"
-                    >
-                      Domain Setup
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
 
@@ -466,43 +375,6 @@ export const CustomerAuthModal: React.FC = () => {
                   {loading ? 'Creating Society Account...' : 'Complete Registration & Sign In'}
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                <div className="pt-2">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-3 text-[11px] text-stone-500 uppercase tracking-wider">Or register with</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800 border border-stone-700/80 rounded-xl text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-2.5 shadow-sm hover:border-amber-500/40 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z" />
-                      <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z" />
-                      <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z" />
-                      <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z" />
-                    </svg>
-                    <span>Sign Up with Google</span>
-                  </button>
-
-                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-amber-500/70" />
-                      <span>Domain: <strong className="text-stone-300 font-mono">zookasunityspirits.in</strong></span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition cursor-pointer font-medium"
-                    >
-                      Domain Setup
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
           </div>
@@ -519,16 +391,6 @@ export const CustomerAuthModal: React.FC = () => {
           </div>
         </motion.div>
       </div>
-
-      {/* Domain Authorization Fixer Modal */}
-      <GoogleDomainAuthModal
-        isOpen={showDomainModal}
-        onClose={() => setShowDomainModal(false)}
-        onRetryGoogleAuth={handleGoogleSignIn}
-        detectedDomain={domainErrorInfo?.domain}
-        consoleUrl={domainErrorInfo?.consoleUrl}
-        projectId={domainErrorInfo?.projectId}
-      />
     </AnimatePresence>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { formatPrice } from '../../utils/currency';
 import { Address } from '../../types';
@@ -32,7 +32,7 @@ export const AccountView: React.FC = () => {
     openAuthModal,
     logoutCustomer,
     updateCustomerProfile,
-    customerOrders,
+    orders,
     setActiveInvoiceOrder,
     addCustomerAddress,
     deleteCustomerAddress,
@@ -77,11 +77,6 @@ export const AccountView: React.FC = () => {
       });
     }
   };
-
-  // Customer Lifetime Volume
-  const lifetimeVolume = useMemo(() => {
-    return customerOrders.reduce((sum, o) => sum + o.total, 0);
-  }, [customerOrders]);
 
   // If customer is currently logged out, display high-contrast Patron Portal sign-in
   if (!isCustomerLoggedIn) {
@@ -166,14 +161,12 @@ export const AccountView: React.FC = () => {
         <div className="flex flex-wrap items-center gap-3 text-center">
           <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 min-w-28">
             <span className="text-[10px] text-stone-400 uppercase tracking-wider block">Vault Orders</span>
-            <strong className="text-xl font-serif text-amber-400">{customerOrders.length}</strong>
+            <strong className="text-xl font-serif text-amber-400">{orders.length}</strong>
             <span className="text-[10px] text-stone-500 block">Total Dispatches</span>
           </div>
           <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800 min-w-28">
             <span className="text-[10px] text-stone-400 uppercase tracking-wider block">Account Volume</span>
-            <strong className="text-xl font-serif text-stone-100">
-              {formatPrice(customerOrders.length > 0 ? (customer.totalSpent > 0 ? customer.totalSpent : lifetimeVolume) : 0, adminSettings.currencySymbol)}
-            </strong>
+            <strong className="text-xl font-serif text-stone-100">{formatPrice(customer.totalSpent, adminSettings.currencySymbol)}</strong>
             <span className="text-[10px] text-stone-500 block">Lifetime Reserved</span>
           </div>
           <button
@@ -190,7 +183,7 @@ export const AccountView: React.FC = () => {
       {/* Sub Tab Navigation */}
       <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
         {[
-          { id: 'orders', label: `Order History (${customerOrders.length})`, icon: Package },
+          { id: 'orders', label: `Order History (${orders.length})`, icon: Package },
           { id: 'ballots', label: `Allocations & Ballot Tickets (${userBallots.length})`, icon: Ticket },
           { id: 'addresses', label: 'Saved Address Book', icon: MapPin },
           { id: 'profile', label: 'Taste Preferences & Alerts', icon: User }
@@ -363,7 +356,7 @@ export const AccountView: React.FC = () => {
       {/* Tab: Orders Management */}
       {activeAccountSubTab === 'orders' && (
         <div className="space-y-6">
-          {customerOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <div className="p-12 text-center rounded-2xl bg-stone-900 border border-stone-800 space-y-3">
               <Package className="w-12 h-12 text-stone-600 mx-auto" />
               <h3 className="font-serif text-lg font-bold text-stone-200">No Orders in Vault Yet</h3>
@@ -378,7 +371,7 @@ export const AccountView: React.FC = () => {
               </button>
             </div>
           ) : (
-            customerOrders.map((order) => {
+            orders.map((order) => {
               // Status progression
               const statusSteps = ['Distillery Packing', 'Batch Sealed', 'Dispatched', 'Delivered'];
               const currentStepIdx = statusSteps.indexOf(order.status);

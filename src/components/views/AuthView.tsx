@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { ZookasOfficialCrest } from '../ZookasOfficialCrest';
-import { GoogleDomainAuthModal } from '../GoogleDomainAuthModal';
 import { 
   LogIn, 
   UserPlus, 
@@ -16,11 +15,7 @@ import {
   CheckCircle2, 
   AlertCircle,
   KeyRound,
-  Wine,
-  Globe,
-  ExternalLink,
-  ShieldAlert,
-  Sparkles
+  Wine
 } from 'lucide-react';
 
 interface AuthViewProps {
@@ -60,14 +55,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string>('');
-
-  // Domain auth modal & error state
-  const [showDomainModal, setShowDomainModal] = useState<boolean>(false);
-  const [domainErrorInfo, setDomainErrorInfo] = useState<{
-    domain: string;
-    consoleUrl?: string;
-    projectId?: string;
-  } | null>(null);
 
   const spiritOptions = [
     'Single Malt Whisky',
@@ -115,17 +102,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
     try {
       const res = await loginWithGoogle();
       if (!res.success) {
-        if (res.isUnauthorizedDomain || res.errorCode === 'auth/unauthorized-domain' || res.error?.toLowerCase().includes('unauthorized domain')) {
-          setDomainErrorInfo({
-            domain: res.unauthorizedDomain || window.location.hostname || 'zookasunityspirits.in',
-            consoleUrl: res.consoleSettingsUrl,
-            projectId: res.projectId
-          });
-          setShowDomainModal(true);
-        }
         setErrorMessage(res.error || 'Google sign-in was canceled or unavailable.');
       } else {
-        setDomainErrorInfo(null);
         setSuccessMessage('Successfully authenticated with Google! Entering cellar...');
       }
     } catch (err: any) {
@@ -243,40 +221,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
 
           {/* Feedback messages */}
           {errorMessage && (
-            <div className="m-4 mb-0 p-3.5 bg-red-950/50 border border-red-800/80 rounded-2xl text-xs text-red-200 flex flex-col gap-2.5 animate-fadeIn">
-              <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                <div className="flex-1 leading-relaxed">{errorMessage}</div>
-              </div>
-
-              {domainErrorInfo && (
-                <div className="pt-2 border-t border-red-900/60 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-amber-300 text-[11px]">
-                    <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Target Domain: <strong className="font-mono">zookasunityspirits.in</strong></span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-[11px] font-bold transition cursor-pointer"
-                    >
-                      Fix with zookasunityspirits.in
-                    </button>
-                    {domainErrorInfo.consoleUrl && (
-                      <a
-                        href={domainErrorInfo.consoleUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-700 rounded-lg text-[11px] font-medium transition cursor-pointer"
-                      >
-                        <span>Firebase Settings</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
+            <div className="m-4 mb-0 p-3.5 bg-red-950/50 border border-red-800/80 rounded-2xl text-xs text-red-200 flex items-start gap-2.5 animate-fadeIn">
+              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">{errorMessage}</div>
             </div>
           )}
 
@@ -410,20 +357,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     </svg>
                     <span>Continue with Google</span>
                   </button>
-
-                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-amber-500/70" />
-                      <span>Domain: <strong className="text-stone-300 font-mono">zookasunityspirits.in</strong></span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition cursor-pointer font-medium"
-                    >
-                      Domain Auth Guide
-                    </button>
-                  </div>
                 </div>
               </form>
             )}
@@ -561,55 +494,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     </>
                   )}
                 </button>
-
-                <div className="pt-2">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-3 text-[11px] text-stone-500 uppercase tracking-wider">Or register with</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800 border border-stone-700/80 rounded-xl text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-2.5 shadow-sm hover:border-amber-500/40 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path
-                        fill="#EA4335"
-                        d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
-                      />
-                    </svg>
-                    <span>Sign Up with Google</span>
-                  </button>
-
-                  <div className="flex items-center justify-between text-[11px] text-stone-500 pt-2 px-1">
-                    <span className="flex items-center gap-1.5">
-                      <Globe className="w-3 h-3 text-amber-500/70" />
-                      <span>Domain: <strong className="text-stone-300 font-mono">zookasunityspirits.in</strong></span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowDomainModal(true)}
-                      className="text-amber-400 hover:text-amber-300 underline underline-offset-2 transition cursor-pointer font-medium"
-                    >
-                      Domain Auth Guide
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
           </div>
@@ -651,16 +535,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
       <footer className="w-full py-4 text-center text-xs text-stone-500 relative z-10 border-t border-stone-900">
         <p>© 2026 Zookas Unity Spirits Co. All rights reserved. Adult Signature (21+) required for courier delivery.</p>
       </footer>
-
-      {/* Google Domain Authorization Helper Modal */}
-      <GoogleDomainAuthModal
-        isOpen={showDomainModal}
-        onClose={() => setShowDomainModal(false)}
-        onRetryGoogleAuth={handleGoogleSignIn}
-        detectedDomain={domainErrorInfo?.domain}
-        consoleUrl={domainErrorInfo?.consoleUrl}
-        projectId={domainErrorInfo?.projectId}
-      />
     </div>
   );
 };

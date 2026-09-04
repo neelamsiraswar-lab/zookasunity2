@@ -499,21 +499,21 @@ export const initialInventoryLots: DistillerInventoryItem[] = [
 export const initialCustomer: CustomerUser = {
   id: 'cust-unity-9901',
   name: 'Lord Arthur Sterling',
-  email: 'arthur.sterling@example.com',
+  email: 'arthur.sterling@casksociety.com',
   phone: '+1 (555) 392-8812',
   avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  loyaltyTier: 'Silver Cask',
-  loyaltyPoints: 100,
-  totalSpent: 0,
-  dateJoined: '2026-01-15',
+  loyaltyTier: 'Gold Cask',
+  loyaltyPoints: 1850,
+  totalSpent: 215000,
+  dateJoined: '2023-11-14',
   emailNotifications: true,
   smsNotifications: false,
   spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon', 'Artisanal Mezcal', 'High-Proof Ryes'],
   authProvider: 'email',
   isEmailVerified: true,
   lastLoginAt: '2026-09-02T18:45:00Z',
-  accountStatus: 'active',
-  adminNotes: 'Founding Collector.',
+  accountStatus: 'vip',
+  adminNotes: 'Founding Collector. Priority ballot draw recipient for annual 25-Year single cask allocations.',
   addresses: [
     {
       id: 'addr-01',
@@ -648,7 +648,83 @@ export const demoCustomers: CustomerUser[] = [
   }
 ];
 
-export const initialOrders: Order[] = [];
+export const initialOrders: Order[] = [
+  {
+    id: 'ord-9921',
+    orderNumber: 'ZUS-2026-9921',
+    date: '2026-08-28T14:20:00Z',
+    status: 'Batch Sealed',
+    items: [
+      {
+        product: initialProducts[0],
+        quantity: 1,
+        giftBox: true,
+        customEngraving: 'To Arthur - Vintage Fellowship 2026'
+      },
+      {
+        product: initialProducts[2],
+        quantity: 2,
+        giftBox: false
+      }
+    ],
+    subtotal: 24500,
+    discount: 2000,
+    giftBoxFee: 1200,
+    shipping: 0,
+    tax: 1955,
+    total: 25655,
+    payment: {
+      type: 'card',
+      cardLast4: '4242',
+      cardBrand: 'Visa Signature',
+      transactionId: 'txn_unity_live_99881144',
+      paidAt: '2026-08-28T14:21:10Z'
+    },
+    shippingAddress: initialCustomer.addresses[0],
+    trackingNumber: '1Z9999999999999999',
+    carrier: 'Spirits Express Priority Carrier',
+    ageConfirmed: true,
+    loyaltyPointsEarned: 320,
+    loyaltyPointsUsed: 250,
+    notes: 'Adult signature strictly required upon delivery.'
+  },
+  {
+    id: 'ord-9840',
+    orderNumber: 'ZUS-2026-9840',
+    date: '2026-08-10T11:05:00Z',
+    status: 'Delivered',
+    items: [
+      {
+        product: initialProducts[1],
+        quantity: 1,
+        giftBox: false
+      },
+      {
+        product: initialProducts[4],
+        quantity: 1,
+        giftBox: true,
+        customEngraving: 'Ancestral Smoke'
+      }
+    ],
+    subtotal: 21300,
+    discount: 0,
+    giftBoxFee: 1200,
+    shipping: 450,
+    tax: 1893,
+    total: 24843,
+    payment: {
+      type: 'apple_pay',
+      transactionId: 'txn_apple_pay_8712361',
+      paidAt: '2026-08-10T11:05:44Z'
+    },
+    shippingAddress: initialCustomer.addresses[0],
+    trackingNumber: '1Z8888888888888888',
+    carrier: 'FedEx Alcohol Special Services',
+    ageConfirmed: true,
+    loyaltyPointsEarned: 323,
+    loyaltyPointsUsed: 0
+  }
+];
 
 export const initialBlogPosts: BlogPost[] = [
   {

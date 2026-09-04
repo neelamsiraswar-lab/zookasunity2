@@ -310,17 +310,7 @@ interface StoreContextType {
   openAuthModal: (tab?: 'login' | 'register', redirectTab?: AppTab) => void;
   closeAuthModal: () => void;
   loginCustomer: (email: string, password?: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: () => Promise<{ 
-    success: boolean; 
-    error?: string;
-    errorCode?: string;
-    isUnauthorizedDomain?: boolean;
-    unauthorizedDomain?: string;
-    targetDomain?: string;
-    projectId?: string;
-    consoleSettingsUrl?: string;
-  }>;
-  loginWithGoogleDirect: (googleEmail: string, googleName?: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   registerCustomer: (details: {
     name: string;
     email: string;
@@ -333,9 +323,6 @@ interface StoreContextType {
   registeredCustomers: CustomerUser[];
   saveCustomerByAdmin: (customer: CustomerUser) => Promise<void>;
   deleteCustomerByAdmin: (customerId: string) => Promise<void>;
-
-  // Customer Orders
-  customerOrders: Order[];
 
   // Cart Helpers
   addToCart: (product: SpiritProduct, quantity?: number, giftBox?: boolean, customEngraving?: string) => void;
@@ -450,14 +437,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [customer, setCustomer] = useState<CustomerUser>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_customer`);
-      if (saved) {
-        const parsed: CustomerUser = JSON.parse(saved);
-        if (parsed.id === 'cust-unity-9901' && parsed.totalSpent === 215000) {
-          return { ...parsed, totalSpent: 0, loyaltyPoints: 100, loyaltyTier: 'Silver Cask' };
-        }
-        return parsed;
-      }
-      return initialCustomer;
+      return saved ? JSON.parse(saved) : initialCustomer;
     } catch {
       return initialCustomer;
     }
@@ -481,12 +461,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [orders, setOrders] = useState<Order[]>(() => {
     try {
       const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_orders`);
-      if (saved) {
-        const parsed: Order[] = JSON.parse(saved);
-        // Exclude legacy mock template orders (ord-9921, ord-9840)
-        return parsed.filter(o => o.id !== 'ord-9921' && o.id !== 'ord-9840');
-      }
-      return initialOrders;
+      return saved ? JSON.parse(saved) : initialOrders;
     } catch {
       return initialOrders;
     }
@@ -813,17 +788,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         // 3. Orders Listener
         unsubOrders = subscribeToCloudOrders((cloudOrds) => {
-          // Exclude legacy template mock orders (ord-9921, ord-9840)
-          const validOrds = cloudOrds.filter(o => o.id !== 'ord-9921' && o.id !== 'ord-9840');
-          // Purge legacy mock orders from cloud storage if present
-          cloudOrds.forEach(o => {
-            if (o.id === 'ord-9921' || o.id === 'ord-9840') {
-              deleteCloudOrder(o.id).catch(() => {});
-            }
-          });
-          setOrders(validOrds);
-          setCloudSyncStatus('connected');
-          setLastSyncedAt(new Date());
+          if (cloudOrds.length > 0) {
+            setOrders(cloudOrds);
+            setCloudSyncStatus('connected');
+            setLastSyncedAt(new Date());
+          }
         });
 
         // 4. Blog Posts Listener
@@ -1092,9 +1061,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       orderNumber: `ZUS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString(),
       status: 'Distillery Packing',
-      customerId: customer.id,
-      customerEmail: customer.email,
-      customerName: customer.name || orderPayload.shippingAddress.fullName,
       items: [...cart],
       subtotal: cartSubtotal,
       discount: discountFromPoints,
@@ -1541,16 +1507,7 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return { success: true };
   };
 
-  const loginWithGoogle = async (): Promise<{ 
-    success: boolean; 
-    error?: string;
-    errorCode?: string;
-    isUnauthorizedDomain?: boolean;
-    unauthorizedDomain?: string;
-    targetDomain?: string;
-    projectId?: string;
-    consoleSettingsUrl?: string;
-  }> => {
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await loginWithGoogleFirebase();
       if (res.success && res.user) {
@@ -1571,12 +1528,12 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           googlePhotoUrl: u.photoURL || existing.avatar,
           isEmailVerified: u.emailVerified ?? true,
           lastLoginAt: nowIso,
-          phone: u.phoneNumber || existing.phone || '+91 95937 12358'
+          phone: u.phoneNumber || existing.phone || '+1 (555) 012-3456'
         } : {
           id: `cust-g-${u.uid}`,
           name: name,
           email: email,
-          phone: u.phoneNumber || '+91 95937 12358',
+          phone: u.phoneNumber || '+1 (555) 012-3456',
           avatar: u.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
           loyaltyTier: 'Silver Cask',
           loyaltyPoints: 100,
@@ -1619,88 +1576,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsAuthModalOpen(false);
         return { success: true };
       }
-      return { 
-        success: false, 
-        error: res.error || 'Google sign-in was canceled or unavailable.',
-        errorCode: res.errorCode,
-        isUnauthorizedDomain: res.isUnauthorizedDomain,
-        unauthorizedDomain: res.unauthorizedDomain,
-        targetDomain: res.targetDomain,
-        projectId: res.projectId,
-        consoleSettingsUrl: res.consoleSettingsUrl
-      };
+      return { success: false, error: res.error || 'Google sign-in was canceled or unavailable.' };
     } catch (err: any) {
       return { success: false, error: err?.message || 'Google sign-in error.' };
-    }
-  };
-
-  const loginWithGoogleDirect = async (googleEmail: string, googleName?: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const email = (googleEmail || '').trim().toLowerCase();
-      if (!email || !email.includes('@')) {
-        return { success: false, error: 'Please provide a valid Google email address.' };
-      }
-      const name = googleName?.trim() || email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-      const pseudoUid = `g-${Math.abs(email.split('').reduce((acc, c) => (acc << 5) - acc + c.charCodeAt(0), 0)).toString(36)}${Date.now().toString(36).slice(-4)}`;
-      const nowIso = new Date().toISOString();
-
-      const existing = registeredCustomers.find(p => p.email.toLowerCase() === email || p.googleEmail?.toLowerCase() === email);
-      const profile: CustomerUser = existing ? {
-        ...existing,
-        name: existing.name || name,
-        authProvider: 'google',
-        googleUid: existing.googleUid || pseudoUid,
-        googleEmail: email,
-        googleDisplayName: existing.googleDisplayName || name,
-        isEmailVerified: true,
-        lastLoginAt: nowIso
-      } : {
-        id: `cust-${pseudoUid}`,
-        name: name,
-        email: email,
-        phone: '+91 95937 12358',
-        avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-        loyaltyTier: 'Silver Cask',
-        loyaltyPoints: 100,
-        totalSpent: 0,
-        dateJoined: nowIso.split('T')[0],
-        emailNotifications: true,
-        smsNotifications: false,
-        spiritPreferences: ['Single Malt Whisky', 'Cask Strength Bourbon'],
-        addresses: [],
-        authProvider: 'google',
-        googleUid: pseudoUid,
-        googleEmail: email,
-        googleDisplayName: name,
-        isEmailVerified: true,
-        lastLoginAt: nowIso,
-        accountStatus: 'active'
-      };
-
-      setCustomer(profile);
-      setIsCustomerLoggedIn(true);
-      setRegisteredCustomers(prev => {
-        const idx = prev.findIndex(p => p.id === profile.id || p.email.toLowerCase() === email);
-        const updatedList = idx >= 0 ? prev.map((p, i) => i === idx ? profile : p) : [profile, ...prev];
-        try {
-          localStorage.setItem(`${LOCAL_STORAGE_KEY}_registered_customers`, JSON.stringify(updatedList));
-        } catch (_) {}
-        return updatedList;
-      });
-
-      try {
-        localStorage.setItem(`${LOCAL_STORAGE_KEY}_is_logged_in`, 'true');
-        localStorage.setItem(`${LOCAL_STORAGE_KEY}_customer`, JSON.stringify(profile));
-      } catch (_) {}
-      saveCloudCustomer(profile).catch(e => console.warn('Cloud customer direct save note:', e));
-      if (authModalRedirectTab) {
-        setActiveTab(authModalRedirectTab);
-        setAuthModalRedirectTab(null);
-      }
-      setIsAuthModalOpen(false);
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err?.message || 'Direct Google sign-in could not be completed.' };
     }
   };
 
@@ -2094,9 +1972,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       orderNumber,
       date: new Date().toISOString(),
       status: 'Batch Sealed',
-      customerId: customer.id,
-      customerEmail: entry.customerEmail || customer.email,
-      customerName: entry.customerName || customer.name,
       items: [
         {
           product: orderedProduct,
@@ -2269,25 +2144,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     forceCloudResync().catch(e => console.warn('Reset sync notice:', e));
   };
 
-  const customerOrders = useMemo(() => {
-    if (!customer) return [];
-    const cId = customer.id;
-    const cEmail = customer.email?.toLowerCase().trim();
-    const cName = customer.name?.toLowerCase().trim();
-
-    return orders.filter(o => {
-      // Strictly exclude legacy template mock orders
-      if (o.id === 'ord-9921' || o.id === 'ord-9840') return false;
-
-      if (o.customerId && o.customerId === cId) return true;
-      if (cEmail && o.customerEmail && o.customerEmail.toLowerCase().trim() === cEmail) return true;
-      if (cEmail && o.notes && o.notes.toLowerCase().includes(cEmail)) return true;
-      if (cName && o.customerName && o.customerName.toLowerCase().trim() === cName) return true;
-      if (cName && o.shippingAddress?.fullName && o.shippingAddress.fullName.toLowerCase().trim() === cName) return true;
-      return false;
-    });
-  }, [orders, customer]);
-
   return (
     <StoreContext.Provider
       value={{
@@ -2334,7 +2190,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         closeAuthModal,
         loginCustomer,
         loginWithGoogle,
-        loginWithGoogleDirect,
         registerCustomer,
         logoutCustomer,
         switchCustomerAccount,
@@ -2343,7 +2198,6 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         saveCustomerByAdmin,
         deleteCustomerByAdmin,
         orders,
-        customerOrders,
         blogPosts,
         aboutContent,
         homeContent,
