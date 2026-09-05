@@ -203,12 +203,12 @@ export const HomeCarousel: React.FC = () => {
               )}
 
               {/* Heading */}
-              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-stone-100 leading-[1.12] drop-shadow-lg">
+              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-[1.12] drop-shadow-lg">
                 {currentSlide.heading}
               </h1>
 
               {/* Subtitle */}
-              <p className="text-base sm:text-xl text-stone-200/90 max-w-2xl mx-auto font-light leading-relaxed drop-shadow">
+              <p className="text-base sm:text-xl text-stone-100/90 max-w-2xl mx-auto font-light leading-relaxed drop-shadow">
                 {currentSlide.subtitle}
               </p>
 

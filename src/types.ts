@@ -343,7 +343,10 @@ export interface AdminSettings {
   sessionTimeoutMinutes?: number; // Auto-lock session after inactivity (default: 30)
   companyLogo?: string;
   logoUrl?: string;
+  defaultTheme?: AppTheme;
 }
+
+export type AppTheme = 'dark' | 'light';
 
 export type AppTab = 'home' | 'products' | 'allocations' | 'about' | 'blog' | 'account' | 'checkout' | 'admin';
 

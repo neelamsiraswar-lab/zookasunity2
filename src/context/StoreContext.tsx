@@ -26,6 +26,7 @@ import {
   BallotStatus,
   BallotEntryStatus,
   AppTab,
+  AppTheme,
   LetterheadTemplate,
   LetterheadDocument,
   CompanyDetails,
@@ -294,6 +295,11 @@ interface StoreContextType {
   setSelectedArticle: (post: BlogPost | null) => void;
   ageVerified: boolean;
   setAgeVerified: (verified: boolean) => void;
+
+  // Theme & Appearance (Dark Cellar vs Light Gallery)
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
+  toggleTheme: () => void;
 
   // Ballot Allocations & Lottery State
   ballotAllocations: BallotAllocation[];
@@ -602,6 +608,55 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return false;
     }
   });
+
+  // Theme & Appearance State (Dark Cellar vs Light Gallery)
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    try {
+      const saved = localStorage.getItem(`${LOCAL_STORAGE_KEY}_theme`);
+      if (saved === 'light' || saved === 'dark') return saved;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+        return 'light';
+      }
+    } catch {
+      // ignore
+    }
+    return 'dark';
+  });
+
+  const applyThemeToDom = useCallback((themeValue: AppTheme) => {
+    if (typeof document !== 'undefined') {
+      const root = document.documentElement;
+      if (themeValue === 'light') {
+        root.classList.add('light');
+        root.classList.remove('dark');
+        root.setAttribute('data-theme', 'light');
+        root.style.colorScheme = 'light';
+      } else {
+        root.classList.add('dark');
+        root.classList.remove('light');
+        root.setAttribute('data-theme', 'dark');
+        root.style.colorScheme = 'dark';
+      }
+    }
+  }, []);
+
+  const setTheme = useCallback((newTheme: AppTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_theme`, newTheme);
+    } catch {
+      // ignore
+    }
+    applyThemeToDom(newTheme);
+  }, [applyThemeToDom]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  }, [theme, setTheme]);
+
+  useEffect(() => {
+    applyThemeToDom(theme);
+  }, [theme, applyThemeToDom]);
 
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
@@ -2791,6 +2846,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         appLogoUrl,
         appLogoIcon,
         updateAppLogo,
+        theme,
+        setTheme,
+        toggleTheme,
         resetAllData,
         resetToDefaultData: resetAllData
       }}

@@ -22,7 +22,9 @@ import {
   Ticket,
   Crown,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 export const AccountView: React.FC = () => {
@@ -42,7 +44,9 @@ export const AccountView: React.FC = () => {
     getUserBallotEntries,
     claimBallotAllocation,
     ballotAllocations,
-    adminSettings
+    adminSettings,
+    theme,
+    setTheme
   } = useStore();
 
   const userBallots = getUserBallotEntries();
@@ -579,6 +583,75 @@ export const AccountView: React.FC = () => {
                   className="w-4 h-4 text-amber-500 rounded"
                 />
               </label>
+            </div>
+          </div>
+
+          {/* Display & Ambience Theme */}
+          <div className="md:col-span-2 p-6 sm:p-8 rounded-2xl bg-stone-900 border border-stone-800 space-y-5">
+            <div>
+              <span className="text-xs uppercase tracking-widest text-amber-400 font-bold">App Visual Ambience</span>
+              <h3 className="font-serif text-xl font-bold text-stone-100 mt-1">Dark & Light Display Theme</h3>
+              <p className="text-xs text-stone-400 mt-1">
+                Customize your viewing experience between our atmospheric dark cellar aesthetic and the crisp gallery ivory theme.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setTheme('dark')}
+                id="theme-select-dark"
+                className={`p-4 rounded-xl border text-left transition flex items-start gap-4 cursor-pointer ${
+                  theme === 'dark'
+                    ? 'border-amber-500 bg-stone-950 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
+                    : 'border-stone-800 bg-stone-950/50 hover:bg-stone-950 opacity-80'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-stone-900 border border-stone-700 flex items-center justify-center text-amber-400 shrink-0">
+                  <Moon className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-stone-100">Dark Cellar Mode</span>
+                    {theme === 'dark' && (
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    Deep obsidian stone, warm candlelight gold accents, and aged cask ambiance.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTheme('light')}
+                id="theme-select-light"
+                className={`p-4 rounded-xl border text-left transition flex items-start gap-4 cursor-pointer ${
+                  theme === 'light'
+                    ? 'border-amber-500 bg-stone-850 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
+                    : 'border-stone-800 bg-stone-950/50 hover:bg-stone-850 opacity-80'
+                }`}
+              >
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 shrink-0">
+                  <Sun className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-stone-100">Light Gallery Mode</span>
+                    {theme === 'light' && (
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-amber-400 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                        Active
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    Crisp alabaster and warm linen canvas with burnished copper contrast.
+                  </p>
+                </div>
+              </button>
             </div>
           </div>
         </div>

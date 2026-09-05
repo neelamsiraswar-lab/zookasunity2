@@ -85,7 +85,13 @@ import {
   Ticket,
   Smartphone,
   Stamp,
-  HardDrive
+  HardDrive,
+  Sun,
+  Moon,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Menu,
+  X
 } from 'lucide-react';
 import { MediaDriveAdmin } from '../admin/MediaDriveAdmin';
 
@@ -125,7 +131,9 @@ export const AdminPanelView: React.FC = () => {
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
-    isCloudSeeding
+    isCloudSeeding,
+    theme,
+    toggleTheme
   } = useStore();
 
   // Authentication State for Admin CMS
@@ -153,6 +161,82 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'drive' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('orders');
+
+  // Collapsible Sidebar State
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('zookas_admin_sidebar_collapsed');
+      return saved === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('zookas_admin_sidebar_collapsed', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+
+  type AdminTabId = 'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'drive' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog';
+
+  interface AdminNavItem {
+    id: AdminTabId;
+    label: string;
+    shortLabel: string;
+    icon: React.ComponentType<{ className?: string }>;
+    badge?: number;
+  }
+
+  interface AdminNavGroup {
+    groupTitle: string;
+    items: AdminNavItem[];
+  }
+
+  // Grouped Navigation Structure for Collapsible Sidebar
+  const adminNavGroups: AdminNavGroup[] = [
+    {
+      groupTitle: 'Operations & Commerce',
+      items: [
+        { id: 'orders', label: 'Order Fulfillment', shortLabel: 'Orders', icon: Truck, badge: orders.length },
+        { id: 'analytics', label: 'Financials & KPI Overview', shortLabel: 'Financials', icon: BarChart3 },
+        { id: 'users', label: 'Registered Patrons', shortLabel: 'Patrons', icon: Users, badge: registeredCustomers.length },
+        { id: 'ballots', label: 'Rare Allocations & Ballots', shortLabel: 'Ballots', icon: Crown, badge: ballotAllocations.length }
+      ]
+    },
+    {
+      groupTitle: 'Catalog & Digital Assets',
+      items: [
+        { id: 'products', label: 'Spirits Catalog Manager', shortLabel: 'Catalog', icon: Wine, badge: products.length },
+        { id: 'drive', label: 'Drive Media Cloud', shortLabel: 'Media Drive', icon: HardDrive, badge: driveAssets?.length || 0 },
+        { id: 'cms_letterheads', label: 'Stationery & Letterheads', shortLabel: 'Letterheads', icon: Stamp, badge: letterheadDocuments?.length || 0 },
+        { id: 'blog', label: 'Mixology & Journal', shortLabel: 'Mixology', icon: Sparkles, badge: blogPosts.length }
+      ]
+    },
+    {
+      groupTitle: 'Storefront CMS Pages',
+      items: [
+        { id: 'cms_header', label: 'Header & Navigation CMS', shortLabel: 'Header CMS', icon: LayoutTemplate },
+        { id: 'cms_bottom_nav', label: 'Bottom Navigation Bar CMS', shortLabel: 'Bottom Nav', icon: Smartphone },
+        { id: 'cms_home', label: 'Home Page CMS', shortLabel: 'Home CMS', icon: FileEdit },
+        { id: 'cms_about', label: 'About Page CMS', shortLabel: 'About CMS', icon: Building2 },
+        { id: 'cms_footer', label: 'Footer & Newsletter CMS', shortLabel: 'Footer CMS', icon: PanelBottom },
+        { id: 'cms_settings', label: 'Store & Taxes Config', shortLabel: 'Store Config', icon: Sliders }
+      ]
+    }
+  ];
+
+  const currentNavTab = adminNavGroups
+    .flatMap(g => g.items)
+    .find(item => item.id === activeTab);
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -844,7 +928,7 @@ export const AdminPanelView: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full max-w-full overflow-x-hidden">
+    <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 w-full max-w-full overflow-x-hidden">
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-800 pb-6">
         <div>
@@ -904,6 +988,18 @@ export const AdminPanelView: React.FC = () => {
             </button>
           </div>
 
+          {/* Admin Theme Switcher */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            id="admin-theme-toggle"
+            title={theme === 'dark' ? 'Switch to Light Gallery Mode' : 'Switch to Dark Cellar Mode'}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-stone-900 hover:bg-stone-850 text-amber-400 border border-stone-800 hover:border-amber-500/50 text-xs font-semibold rounded-xl transition cursor-pointer shadow-sm"
+          >
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-amber-500" />}
+            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+          </button>
+
           {/* Lock Vault Button */}
           <button
             type="button"
@@ -938,42 +1034,297 @@ export const AdminPanelView: React.FC = () => {
         </div>
       )}
 
-      {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
-        {[
-          { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
-          { id: 'analytics', label: 'Financials & KPI Overview', icon: BarChart3 },
-          { id: 'users', label: `Registered Patrons & Google Logins (${registeredCustomers.length})`, icon: Users },
-          { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
-          { id: 'drive', label: `Drive Media Cloud (${driveAssets?.length || 0})`, icon: HardDrive },
-          { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
-          { id: 'cms_letterheads', label: `Stationery & Letterheads (${letterheadDocuments?.length || 0})`, icon: Stamp },
-          { id: 'cms_header', label: 'Header & Navigation CMS', icon: LayoutTemplate },
-          { id: 'cms_bottom_nav', label: 'Bottom Navigation Bar CMS', icon: Smartphone },
-          { id: 'cms_home', label: 'Home Page CMS', icon: FileEdit },
-          { id: 'cms_about', label: 'About Page CMS', icon: Building2 },
-          { id: 'cms_footer', label: 'Footer & Newsletter CMS', icon: PanelBottom },
-          { id: 'cms_settings', label: 'Store & Taxes Config', icon: Sliders },
-          { id: 'blog', label: `Mixology & Blog (${blogPosts.length})`, icon: Sparkles }
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
+      {/* Main Operations Area: Collapsible Sidebar + Content Workspace */}
+      <div className="flex flex-col lg:flex-row items-start gap-6 w-full">
+        {/* Mobile Navigation Header & Drawer (Screens < lg) */}
+        <div className="lg:hidden w-full bg-stone-900 border border-stone-800 rounded-2xl p-3 shadow-lg flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {currentNavTab && (
+                <div className="w-8 h-8 rounded-lg bg-amber-500 text-stone-950 flex items-center justify-center shrink-0 shadow">
+                  <currentNavTab.icon className="w-4 h-4" />
+                </div>
+              )}
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-bold text-amber-400 block tracking-wider">Active CMS Section</span>
+                <span className="text-xs font-bold text-stone-100 truncate block">
+                  {currentNavTab?.label} {currentNavTab?.badge !== undefined && currentNavTab.badge > 0 ? `(${currentNavTab.badge})` : ''}
+                </span>
+              </div>
+            </div>
+
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-xl transition cursor-pointer whitespace-nowrap ${
-                isActive
-                  ? 'bg-amber-500 text-stone-950 shadow-md shadow-amber-500/20'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-900'
-              }`}
+              type="button"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              id="admin-mobile-menu-toggle"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-750 text-amber-400 border border-stone-700 text-xs font-bold transition cursor-pointer"
             >
-              <Icon className="w-4 h-4" />
-              <span>{tab.label}</span>
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              <span>{mobileMenuOpen ? 'Close Menu' : 'All 14 Tabs'}</span>
             </button>
-          );
-        })}
-      </div>
+          </div>
+
+          {/* Mobile Collapsible Dropdown */}
+          {mobileMenuOpen && (
+            <div className="pt-3 border-t border-stone-800 space-y-4 max-h-[60vh] overflow-y-auto">
+              {adminNavGroups.map((group) => (
+                <div key={group.groupTitle} className="space-y-1.5">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500 px-1">
+                    {group.groupTitle}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setMobileMenuOpen(false);
+                          }}
+                          className={`flex items-center justify-between gap-2 p-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
+                            isActive
+                              ? 'bg-amber-500 text-stone-950 font-bold shadow'
+                              : 'bg-stone-950/60 hover:bg-stone-800 text-stone-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Icon className="w-4 h-4 shrink-0" />
+                            <span className="truncate">{item.label}</span>
+                          </div>
+                          {item.badge !== undefined && item.badge > 0 && (
+                            <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                              isActive ? 'bg-stone-950/20 text-stone-950' : 'bg-stone-800 text-amber-400'
+                            }`}>
+                              {item.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Collapsible Sidebar (Desktop) */}
+        <aside
+          className={`hidden lg:flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out sticky top-24 self-start bg-stone-900 border border-stone-800 rounded-3xl p-3 shadow-xl ${
+            sidebarCollapsed ? 'w-[76px]' : 'w-64 xl:w-72'
+          }`}
+        >
+          {/* Header of Sidebar */}
+          <div className={`flex items-center pb-3 border-b border-stone-800 mb-2 ${
+            sidebarCollapsed ? 'justify-center' : 'justify-between px-2'
+          }`}>
+            {!sidebarCollapsed ? (
+              <>
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-stone-300 truncate">
+                    CMS Navigation
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleSidebar}
+                  title="Collapse sidebar (Icon-only mode)"
+                  id="admin-sidebar-collapse-btn"
+                  className="p-1.5 rounded-lg text-stone-400 hover:text-amber-400 hover:bg-stone-800 transition cursor-pointer"
+                >
+                  <PanelLeftClose className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                title="Expand sidebar"
+                id="admin-sidebar-expand-btn"
+                className="w-10 h-10 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-stone-800 transition cursor-pointer flex items-center justify-center"
+              >
+                <PanelLeftOpen className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation Groups */}
+          <div className="space-y-4 max-h-[calc(100vh-14rem)] overflow-y-auto overflow-x-hidden pr-0.5 custom-scrollbar">
+            {adminNavGroups.map((group, groupIdx) => (
+              <div key={group.groupTitle} className="space-y-1">
+                {!sidebarCollapsed ? (
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-stone-500 px-3 pt-1 pb-1 flex items-center justify-between">
+                    <span>{group.groupTitle}</span>
+                  </div>
+                ) : (
+                  groupIdx > 0 && <div className="my-2 border-t border-stone-800/80 mx-1.5" />
+                )}
+
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = activeTab === item.id;
+
+                    if (sidebarCollapsed) {
+                      return (
+                        <div key={item.id} className="relative group">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab(item.id)}
+                            id={`admin-tab-btn-${item.id}`}
+                            aria-label={item.label}
+                            title={`${item.label}${item.badge !== undefined && item.badge > 0 ? ` (${item.badge})` : ''}`}
+                            className={`relative w-full h-11 rounded-xl flex items-center justify-center transition cursor-pointer ${
+                              isActive
+                                ? 'bg-amber-500 text-stone-950 shadow-md shadow-amber-500/20'
+                                : 'text-stone-400 hover:text-amber-400 hover:bg-stone-800'
+                            }`}
+                          >
+                            <Icon className="w-5 h-5 shrink-0" />
+
+                            {/* Active Tab Indicator Bar */}
+                            {isActive && (
+                              <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-5 bg-amber-400 rounded-r-full shadow-sm" />
+                            )}
+
+                            {/* Badge Indicator Pill */}
+                            {item.badge !== undefined && item.badge > 0 && (
+                              <span className={`absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full text-[9px] font-mono font-bold flex items-center justify-center shadow-sm ${
+                                isActive ? 'bg-stone-950 text-amber-400 border border-amber-500/40' : 'bg-amber-500 text-stone-950'
+                              }`}>
+                                {item.badge > 99 ? '99+' : item.badge}
+                              </span>
+                            )}
+                          </button>
+
+                          {/* Hover Tooltip Card (positioned to the right) */}
+                          <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-stone-950 text-stone-100 text-xs font-bold rounded-xl border border-stone-700 shadow-2xl whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-150 z-50 flex items-center gap-2">
+                            <span>{item.label}</span>
+                            {item.badge !== undefined && item.badge > 0 && (
+                              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">
+                                {item.badge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setActiveTab(item.id)}
+                        id={`admin-tab-btn-${item.id}`}
+                        className={`w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer group ${
+                          isActive
+                            ? 'bg-amber-500 text-stone-950 font-bold shadow-md shadow-amber-500/20'
+                            : 'text-stone-300 hover:text-white hover:bg-stone-850/80'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition ${
+                            isActive
+                              ? 'bg-stone-950/15 text-stone-950'
+                              : 'bg-stone-800 text-amber-400 group-hover:bg-amber-500/20'
+                          }`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <span className="truncate">{item.label}</span>
+                        </div>
+
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 ${
+                            isActive
+                              ? 'bg-stone-950/20 text-stone-950'
+                              : 'bg-stone-800 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer Collapse Action Bar */}
+          <div className="pt-3 border-t border-stone-800 mt-2">
+            {!sidebarCollapsed ? (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                id="admin-sidebar-footer-collapse-btn"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-stone-400 hover:text-stone-200 hover:bg-stone-850 transition cursor-pointer"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+                <span>Collapse Sidebar</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                title="Expand Sidebar"
+                id="admin-sidebar-footer-expand-btn"
+                className="w-full flex items-center justify-center p-2 rounded-xl text-stone-400 hover:text-amber-400 hover:bg-stone-850 transition cursor-pointer"
+              >
+                <PanelLeftOpen className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </aside>
+
+        {/* Content Workspace Area */}
+        <main className="flex-1 min-w-0 w-full space-y-8">
+          {/* Breadcrumb / Section Banner */}
+          {currentNavTab && (
+            <div className="p-4 rounded-2xl bg-stone-900/60 border border-stone-800/80 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                  <currentNavTab.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Admin Console Workspace</span>
+                    {currentNavTab.badge !== undefined && currentNavTab.badge > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        {currentNavTab.badge} items
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="font-serif text-lg font-bold text-stone-100 leading-tight">
+                    {currentNavTab.label}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Quick Toggle for Collapsing Sidebar directly from Workspace */}
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs text-stone-400 hover:text-amber-400 bg-stone-950/60 hover:bg-stone-800 rounded-xl border border-stone-800 transition cursor-pointer"
+                title={sidebarCollapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar'}
+              >
+                {sidebarCollapsed ? (
+                  <>
+                    <PanelLeftOpen className="w-3.5 h-3.5" />
+                    <span>Expand Sidebar</span>
+                  </>
+                ) : (
+                  <>
+                    <PanelLeftClose className="w-3.5 h-3.5" />
+                    <span>Collapse Sidebar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
       {/* 1. ANALYTICS OVERVIEW */}
       {activeTab === 'analytics' && (
@@ -3027,6 +3378,8 @@ export const AdminPanelView: React.FC = () => {
           </div>
         </div>
       )}
+        </main>
+      </div>
 
       {/* Modal: Add/Edit Spirit Product */}
       {productModalOpen && (

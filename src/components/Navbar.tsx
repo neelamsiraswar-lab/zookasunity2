@@ -24,7 +24,9 @@ import {
   Compass,
   Crown,
   GlassWater,
-  ArrowRight
+  ArrowRight,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const getHeaderIcon = (iconName?: string) => {
@@ -64,7 +66,9 @@ export const Navbar: React.FC = () => {
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
-    isCloudSeeding
+    isCloudSeeding,
+    theme,
+    toggleTheme
   } = useStore();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -376,6 +380,21 @@ export const Navbar: React.FC = () => {
               </button>
             )}
 
+            {/* Theme Toggle Button (Light/Dark Mode) */}
+            <button
+              onClick={toggleTheme}
+              id="nav-theme-toggle"
+              className="p-2.5 rounded-xl bg-stone-900 border border-stone-700/80 hover:border-amber-500 text-stone-200 hover:text-amber-400 transition cursor-pointer flex items-center justify-center group"
+              aria-label={theme === 'dark' ? 'Switch to Light Gallery Mode' : 'Switch to Dark Cellar Mode'}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-5 h-5 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
+              ) : (
+                <Moon className="w-5 h-5 text-amber-600 group-hover:-rotate-12 transition-transform duration-300" />
+              )}
+            </button>
+
             {/* Shopping Cart Drawer Trigger */}
             {effectiveHeader.showCartButton !== false && (
               <button
@@ -479,6 +498,32 @@ export const Navbar: React.FC = () => {
           })}
 
           <div className="pt-3 border-t border-stone-800 flex flex-col gap-2">
+            {/* Mobile Theme Switcher */}
+            <div className="flex items-center justify-between p-2.5 bg-stone-900 rounded-xl border border-stone-800/80">
+              <div className="flex items-center gap-2.5">
+                {theme === 'dark' ? (
+                  <Moon className="w-4 h-4 text-amber-400 shrink-0" />
+                ) : (
+                  <Sun className="w-4 h-4 text-amber-500 shrink-0" />
+                )}
+                <div>
+                  <span className="text-xs font-semibold text-stone-200 block">
+                    {theme === 'dark' ? 'Dark Cellar Mode' : 'Light Gallery Mode'}
+                  </span>
+                  <span className="text-[10px] text-stone-400 block">
+                    {theme === 'dark' ? 'Atmospheric obsidian' : 'Crisp ivory & bronze'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={toggleTheme}
+                id="mobile-theme-toggle-btn"
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-stone-800 hover:bg-stone-700 text-amber-400 border border-amber-500/30 transition cursor-pointer"
+              >
+                {theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
+              </button>
+            </div>
+
             {effectiveHeader.showCustomerAccount !== false && (
               <>
                 {isCustomerLoggedIn ? (
