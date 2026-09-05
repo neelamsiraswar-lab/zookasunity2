@@ -14,7 +14,6 @@ import {
   User, 
   CheckCircle2, 
   AlertCircle,
-  KeyRound,
   Wine
 } from 'lucide-react';
 
@@ -25,7 +24,6 @@ interface AuthViewProps {
 export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
   const { 
     loginCustomer, 
-    loginWithGoogle, 
     registerCustomer, 
     adminSettings,
     headerConfig,
@@ -98,6 +96,18 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
 
     setIsLoading(true);
     try {
+      const currentAdminPassword = adminSettings?.adminPassword || 'zookas2026';
+      const currentAdminPin = adminSettings?.adminPin || '8821';
+      if (
+        (loginEmail.trim().toLowerCase().includes('admin') && (loginPassword === currentAdminPassword || loginPassword === currentAdminPin)) ||
+        loginPassword === currentAdminPassword ||
+        loginPassword === currentAdminPin
+      ) {
+        setSuccessMessage('Master Distiller access verified. Opening Admin Portal...');
+        handleAdminCms();
+        return;
+      }
+
       const res = await loginCustomer(loginEmail, loginPassword);
       if (!res.success) {
         setErrorMessage(res.error || 'Unable to sign in. Please verify your email.');
@@ -108,26 +118,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
       }
     } catch (err: any) {
       setErrorMessage(err?.message || 'Authentication failed. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setErrorMessage('');
-    setSuccessMessage('');
-    setIsLoading(true);
-    try {
-      const res = await loginWithGoogle();
-      if (!res.success) {
-        setErrorMessage(res.error || 'Google sign-in was canceled or unavailable.');
-      } else {
-        setSuccessMessage('Successfully authenticated with Google! Entering cellar...');
-        setActiveTab('home');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    } catch (err: any) {
-      setErrorMessage(err?.message || 'Google sign-in error occurred.');
     } finally {
       setIsLoading(false);
     }
@@ -219,16 +209,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
             <p className="text-xs text-stone-400 mt-1 max-w-md mx-auto">
               Please sign in or create your distillery patron account to enter the store, access member allocations, and manage orders.
             </p>
-            <div className="mt-3 flex justify-center">
-              <button
-                type="button"
-                onClick={handleAdminCms}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500/60 text-amber-300 hover:text-amber-200 text-xs font-semibold transition cursor-pointer shadow-sm"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                <span>Admin CMS Login</span>
-              </button>
-            </div>
           </div>
 
           {/* Tab Navigation */}
@@ -338,7 +318,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 disabled:opacity-50 text-stone-950 font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 mt-2 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] disabled:opacity-50 text-stone-950 font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 mt-4 cursor-pointer"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -352,60 +332,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     </>
                   )}
                 </button>
-
-                {/* Social Login / Google Auth */}
-                <div className="pt-3">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-3 text-[11px] text-stone-500 uppercase tracking-wider">Or continue with</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    disabled={isLoading}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800 border border-stone-700/80 rounded-xl text-stone-200 text-xs font-semibold transition flex items-center justify-center gap-2.5 shadow-sm hover:border-amber-500/40 cursor-pointer"
-                  >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24">
-                      <path
-                        fill="#EA4335"
-                        d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"
-                      />
-                      <path
-                        fill="#4285F4"
-                        d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"
-                      />
-                      <path
-                        fill="#FBBC05"
-                        d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"
-                      />
-                      <path
-                        fill="#34A853"
-                        d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"
-                      />
-                    </svg>
-                    <span>Continue with Google</span>
-                  </button>
-                </div>
-
-                {/* Direct Admin CMS Portal Button */}
-                <div className="pt-2">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-2.5 text-[10px] text-stone-500 uppercase tracking-wider">Staff & CMS Access</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAdminCms}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-500/70 rounded-xl text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    <span>Login to Admin CMS</span>
-                  </button>
-                </div>
               </form>
             )}
 
@@ -530,7 +456,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-stone-950 font-bold text-sm rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 cursor-pointer"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.99] disabled:opacity-50 text-stone-950 font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 mt-4 cursor-pointer"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">
@@ -544,24 +470,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
                     </>
                   )}
                 </button>
-
-                {/* Direct Admin CMS Portal Button */}
-                <div className="pt-2">
-                  <div className="relative flex py-2 items-center">
-                    <div className="flex-grow border-t border-stone-800"></div>
-                    <span className="flex-shrink mx-2.5 text-[10px] text-stone-500 uppercase tracking-wider">Distillery Operations</span>
-                    <div className="flex-grow border-t border-stone-800"></div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAdminCms}
-                    className="w-full py-2.5 px-4 bg-stone-950 hover:bg-stone-800/90 border border-amber-500/40 hover:border-amber-500/70 rounded-xl text-amber-300 hover:text-amber-200 text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-                  >
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
-                    <span>Login to Admin CMS</span>
-                  </button>
-                </div>
               </form>
             )}
           </div>
@@ -584,18 +492,6 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
               Re-open Age Verification
             </button>
           </div>
-        </div>
-
-        {/* Discreet Distillery Staff / Admin Sign In Link */}
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={handleAdminCms}
-            className="inline-flex items-center gap-2 text-xs font-medium text-stone-400 hover:text-amber-300 transition cursor-pointer py-1.5 px-4 rounded-xl bg-stone-900/80 hover:bg-stone-800 border border-stone-800 hover:border-amber-500/40 shadow-sm"
-          >
-            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-            <span>Login to Admin CMS (Staff & Master Distiller Portal)</span>
-          </button>
         </div>
       </main>
 
