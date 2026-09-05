@@ -26,6 +26,14 @@ export const initialCompanyDetails: CompanyDetails = {
   headerLogoLayout: 'left_aligned_row',
   headerDetailsPosition: 'top_right',
   footerNoticeText: "ZOOKAS UNITY BLENDERS & DISTILLERS PRIVATE LIMITED • Registered Office: Dankuni, Hooghly, WB 712311",
+  showWatermarkOnLetterhead: true,
+  watermarkType: 'distillery_crest',
+  watermarkText: "ZOOKAS UNITY SPIRITS",
+  watermarkImageUrl: '',
+  watermarkOpacity: 0.045,
+  watermarkSize: 380,
+  watermarkRotation: 0,
+  watermarkPosition: 'center',
   updatedAt: '2026-09-02T12:00:00Z'
 };
 

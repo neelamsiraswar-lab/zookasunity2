@@ -149,6 +149,10 @@ export interface Order {
   loyaltyPointsEarned: number;
   loyaltyPointsUsed: number;
   notes?: string;
+  customerId?: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
 }
 
 export interface CustomerUser {
@@ -337,6 +341,8 @@ export interface AdminSettings {
   adminPin?: string; // 4-to-6 Digit Security PIN (default: 8821)
   requireBothPasswordAndPin?: boolean; // If true, requires both Password and PIN
   sessionTimeoutMinutes?: number; // Auto-lock session after inactivity (default: 30)
+  companyLogo?: string;
+  logoUrl?: string;
 }
 
 export type AppTab = 'home' | 'products' | 'allocations' | 'about' | 'blog' | 'account' | 'checkout' | 'admin';
@@ -524,6 +530,9 @@ export interface FooterSocialLink {
 export interface FooterCustomizationConfig {
   brandName?: string;
   brandDescription?: string;
+  logoImageUrl?: string;
+  logoIcon?: string;
+  logoType?: 'icon_text' | 'image' | 'text_only';
   showNewsletter?: boolean;
   newsletterHeading?: string;
   newsletterSubheading?: string;
@@ -710,6 +719,15 @@ export interface CompanyDetails {
   headerLogoLayout?: 'left_aligned_row' | 'centered_stack';
   headerDetailsPosition?: 'top_right' | 'below_logo' | 'footer_band' | 'dual_column';
   footerNoticeText?: string;
+  // Letterhead Watermark Configuration
+  showWatermarkOnLetterhead?: boolean;
+  watermarkType?: 'distillery_crest' | 'company_logo' | 'custom_image' | 'custom_text' | 'authenticated_seal' | 'cask_barrel_stamp' | 'none';
+  watermarkText?: string;
+  watermarkImageUrl?: string;
+  watermarkOpacity?: number; // 0.01 - 0.25 (e.g. 0.045)
+  watermarkSize?: number; // e.g. 380
+  watermarkRotation?: number; // e.g. 0 or -20
+  watermarkPosition?: 'center' | 'bottom_right' | 'diagonal_repeat';
   updatedAt?: string;
 }
 

@@ -9,6 +9,7 @@ import { BottomNavCustomizer } from '../admin/BottomNavCustomizer';
 import { BallotDrawsAdmin } from '../admin/BallotDrawsAdmin';
 import { LetterheadManager } from '../admin/LetterheadManager';
 import { RegisteredUsersAdmin } from '../admin/RegisteredUsersAdmin';
+import { OrderFulfillmentAdmin } from '../admin/OrderFulfillmentAdmin';
 import { 
   SpiritProduct, 
   DistillerInventoryItem, 
@@ -118,6 +119,9 @@ export const AdminPanelView: React.FC = () => {
     letterheadTemplates,
     driveAssets,
     registeredCustomers,
+    appLogoUrl,
+    appLogoIcon,
+    updateAppLogo,
     cloudSyncStatus,
     lastSyncedAt,
     forceCloudResync,
@@ -148,7 +152,7 @@ export const AdminPanelView: React.FC = () => {
   const [showSettingsPassword, setShowSettingsPassword] = useState<boolean>(false);
   const [showSettingsPin, setShowSettingsPin] = useState<boolean>(false);
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'drive' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('inventory');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'users' | 'inventory' | 'products' | 'ballots' | 'orders' | 'drive' | 'cms_letterheads' | 'cms_header' | 'cms_bottom_nav' | 'cms_home' | 'cms_about' | 'cms_footer' | 'cms_settings' | 'blog'>('orders');
 
   // Product Modal state (Add / Edit)
   const [productModalOpen, setProductModalOpen] = useState<boolean>(false);
@@ -937,13 +941,12 @@ export const AdminPanelView: React.FC = () => {
       {/* Navigation Sub-Tabs */}
       <div className="flex items-center gap-2 border-b border-stone-800 pb-2 overflow-x-auto">
         {[
+          { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
           { id: 'analytics', label: 'Financials & KPI Overview', icon: BarChart3 },
           { id: 'users', label: `Registered Patrons & Google Logins (${registeredCustomers.length})`, icon: Users },
-          { id: 'inventory', label: `Distiller Real-Time Cask Tracker (${inventoryLots.length})`, icon: Layers },
           { id: 'products', label: `Spirits Catalog Manager (${products.length})`, icon: Wine },
           { id: 'drive', label: `Drive Media Cloud (${driveAssets?.length || 0})`, icon: HardDrive },
           { id: 'ballots', label: `Rare Allocations & Ballots (${ballotAllocations.length})`, icon: Crown },
-          { id: 'orders', label: `Order Fulfillment (${orders.length})`, icon: Truck },
           { id: 'cms_letterheads', label: `Stationery & Letterheads (${letterheadDocuments?.length || 0})`, icon: Stamp },
           { id: 'cms_header', label: 'Header & Navigation CMS', icon: LayoutTemplate },
           { id: 'cms_bottom_nav', label: 'Bottom Navigation Bar CMS', icon: Smartphone },
@@ -1251,96 +1254,8 @@ export const AdminPanelView: React.FC = () => {
         </div>
       )}
 
-      {/* 4. ORDER FULFILLMENT CENTER */}
-      {activeTab === 'orders' && (
-        <div className="space-y-6">
-          <div>
-            <h3 className="font-serif text-xl font-bold text-stone-100">
-              Customer Orders & Dispatch Center
-            </h3>
-            <p className="text-xs text-stone-400">
-              Update warehouse fulfillment stages and assign courier tracking IDs.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {orders.map((ord) => (
-              <div
-                key={ord.id}
-                className="p-5 rounded-2xl bg-stone-900 border border-stone-800 space-y-4 shadow-lg"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-800 pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm font-bold text-amber-400">{ord.orderNumber}</span>
-                      <span className="text-xs text-stone-400">by {ord.customerName} ({ord.customerEmail})</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      Destination: {ord.shippingAddress.street}, {ord.shippingAddress.city}, {ord.shippingAddress.state} {ord.shippingAddress.zipCode}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => setActiveInvoiceOrder(ord)}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs rounded-lg transition"
-                    >
-                      <Printer className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Invoice</span>
-                    </button>
-                    <span className="font-serif font-bold text-stone-100 text-base">
-                      {formatPrice(ord.total, adminSettings.currencySymbol)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Fulfillment Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="block text-stone-400 mb-1 font-medium">Fulfillment Status</label>
-                    <select
-                      value={ord.status}
-                      onChange={(e) => updateOrderStatus(ord.id, e.target.value as OrderStatus)}
-                      className="w-full p-2 bg-stone-950 border border-stone-700 rounded-lg text-stone-200 focus:border-amber-500 font-medium"
-                    >
-                      <option>Distillery Packing</option>
-                      <option>Batch Sealed</option>
-                      <option>Dispatched</option>
-                      <option>Delivered</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-stone-400 mb-1 font-medium">Tracking Number</label>
-                    <input
-                      type="text"
-                      value={ord.trackingNumber}
-                      onChange={(e) => updateOrderTracking(ord.id, e.target.value, ord.carrier)}
-                      className="w-full p-2 bg-stone-950 border border-stone-700 rounded-lg text-stone-200 font-mono"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-stone-400 mb-1 font-medium">Courier Service</label>
-                    <input
-                      type="text"
-                      value={ord.carrier}
-                      onChange={(e) => updateOrderTracking(ord.id, ord.trackingNumber, e.target.value)}
-                      className="w-full p-2 bg-stone-950 border border-stone-700 rounded-lg text-stone-200"
-                    />
-                  </div>
-                </div>
-
-                {/* Ordered Items Summary */}
-                <div className="pt-2 text-xs text-stone-400">
-                  <span className="font-bold text-stone-300">Bottles: </span>
-                  {ord.items.map(it => `${it.product.name} (x${it.quantity})`).join(', ')}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* 4. ORDER FULFILLMENT CENTER (Customer Details & Product List Wise) */}
+      {activeTab === 'orders' && <OrderFulfillmentAdmin />}
 
       {/* 5. CMS HOME PAGE */}
       {activeTab === 'cms_home' && (
@@ -2743,6 +2658,83 @@ export const AdminPanelView: React.FC = () => {
                 onChange={(e) => setCmsSettingsState({ ...cmsSettingsState, brandTagline: e.target.value })}
                 className="w-full p-2.5 bg-stone-950 border border-stone-700 rounded-lg text-stone-100"
               />
+            </div>
+          </div>
+
+          {/* Brand Logo & Auto-Sync System */}
+          <div className="p-4 bg-stone-950 rounded-xl border border-amber-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-stone-200 font-bold">Distillery Brand Logo</label>
+                <p className="text-[11px] text-stone-400">
+                  Changing this logo automatically updates the Header icon, Footer brand emblem, and Login / Signup screens.
+                </p>
+              </div>
+              {appLogoUrl && (
+                <span className="px-2.5 py-1 bg-amber-500/10 text-amber-300 border border-amber-500/30 rounded-full text-[10px] font-bold">
+                  Active App-Wide
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-stone-900 border border-amber-500/40 flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
+                {(cmsSettingsState.companyLogo || cmsSettingsState.logoUrl || appLogoUrl) ? (
+                  <img 
+                    src={cmsSettingsState.companyLogo || cmsSettingsState.logoUrl || appLogoUrl} 
+                    alt="Logo Preview" 
+                    className="w-full h-full object-contain p-1"
+                  />
+                ) : (
+                  <Flame className="w-6 h-6 text-amber-400" />
+                )}
+              </div>
+              <div className="flex-1 w-full space-y-2">
+                <input
+                  type="url"
+                  value={cmsSettingsState.companyLogo || cmsSettingsState.logoUrl || ''}
+                  onChange={(e) => {
+                    const url = e.target.value;
+                    setCmsSettingsState(prev => ({
+                      ...prev,
+                      companyLogo: url,
+                      logoUrl: url
+                    }));
+                  }}
+                  placeholder="https://images.unsplash.com/... or paste image URL"
+                  className="w-full p-2.5 bg-stone-900 border border-stone-700 rounded-lg text-stone-100 text-xs font-mono focus:border-amber-500 focus:outline-none"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const logoToApply = cmsSettingsState.companyLogo || cmsSettingsState.logoUrl;
+                      if (logoToApply) {
+                        await updateAppLogo(logoToApply);
+                        showSaveSuccess('Logo updated and synced across Header, Footer, and Login/Signup screens!');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-lg text-xs font-semibold transition cursor-pointer"
+                  >
+                    Propagate to Header, Footer & Auth Pages
+                  </button>
+                  {appLogoUrl && (!cmsSettingsState.companyLogo && !cmsSettingsState.logoUrl) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCmsSettingsState(prev => ({
+                          ...prev,
+                          companyLogo: appLogoUrl,
+                          logoUrl: appLogoUrl
+                        }));
+                      }}
+                      className="px-2.5 py-1.5 text-stone-400 hover:text-stone-200 text-xs underline cursor-pointer"
+                    >
+                      Fill from active app logo
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

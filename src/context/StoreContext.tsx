@@ -160,6 +160,9 @@ export const normalizeFooterConfig = (incoming?: Partial<FooterCustomizationConf
     ...incoming,
     brandName: incoming.brandName || base.brandName,
     brandDescription: incoming.brandDescription || base.brandDescription,
+    logoImageUrl: incoming.logoImageUrl || incoming.brandColumn?.logoImageUrl || base.logoImageUrl || '',
+    logoIcon: incoming.logoIcon || incoming.brandColumn?.logoIcon || base.logoIcon || 'Flame',
+    logoType: incoming.logoType || incoming.brandColumn?.logoType || base.logoType || 'icon_text',
     showNewsletter: incoming.showNewsletter ?? incoming.newsletterSection?.enabled ?? base.showNewsletter,
     newsletterHeading: incoming.newsletterHeading || incoming.newsletterSection?.heading || base.newsletterHeading,
     newsletterSubheading: incoming.newsletterSubheading || incoming.newsletterSection?.description || base.newsletterSubheading,
@@ -439,6 +442,11 @@ interface StoreContextType {
   applyDriveAssetToLogo: (url: string) => Promise<void>;
   applyDriveAssetToBanner: (url: string, heading?: string) => Promise<void>;
   applyDriveAssetToProduct: (productId: string, url: string) => Promise<void>;
+
+  // Synchronized Brand Logo & Icon
+  appLogoUrl: string;
+  appLogoIcon: string;
+  updateAppLogo: (url: string, iconName?: string) => Promise<void>;
 
   // Reset & Re-seed demo data
   resetAllData: () => void;
@@ -1204,7 +1212,11 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ageConfirmed: true,
       loyaltyPointsEarned: pointsEarned,
       loyaltyPointsUsed: orderPayload.loyaltyPointsToUse,
-      notes: orderPayload.notes
+      notes: orderPayload.notes,
+      customerId: customer.id,
+      customerName: customer.name || orderPayload.shippingAddress.fullName,
+      customerEmail: customer.email,
+      customerPhone: customer.phone || orderPayload.shippingAddress.phone
     };
 
     // 1. Deduct Real-Time Inventory & Product Stock
@@ -1406,19 +1418,165 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const updateAdminSettings = (settings: AdminSettings) => {
     setAdminSettings(settings);
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(settings));
+    } catch (_) {}
     saveCloudSiteContent('settings', settings).catch(e => console.warn('Cloud sync admin settings notice:', e));
+
+    const logoCandidate = settings.companyLogo || settings.logoUrl;
+    if (logoCandidate !== undefined) {
+      setHeaderConfig(prev => {
+        if (prev.logoImageUrl === logoCandidate) return prev;
+        const nextHeader = {
+          ...prev,
+          logoImageUrl: logoCandidate,
+          brandName: settings.brandName || prev.brandName,
+          brandTagline: settings.brandTagline || prev.brandTagline
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_header`, JSON.stringify(nextHeader));
+        } catch (_) {}
+        saveCloudSiteContent('header', nextHeader).catch(() => {});
+        return nextHeader;
+      });
+
+      setFooterConfig(prev => {
+        if (prev.logoImageUrl === logoCandidate) return prev;
+        const nextFooter = {
+          ...prev,
+          logoImageUrl: logoCandidate,
+          brandName: settings.brandName || prev.brandName
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_footer`, JSON.stringify(nextFooter));
+        } catch (_) {}
+        saveCloudSiteContent('footer', nextFooter).catch(() => {});
+        return nextFooter;
+      });
+
+      setCompanyDetails(prev => {
+        if (prev.logoUrl === logoCandidate) return prev;
+        const nextComp = {
+          ...prev,
+          logoUrl: logoCandidate,
+          companyName: settings.brandName || prev.companyName
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(nextComp));
+        } catch (_) {}
+        saveCloudSiteContent('company_details', nextComp).catch(() => {});
+        return nextComp;
+      });
+    }
   };
 
   const updateHeaderConfig = (config: HeaderCustomizationConfig) => {
     const normalized = normalizeHeaderConfig(config);
     setHeaderConfig(normalized);
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_header`, JSON.stringify(normalized));
+    } catch (_) {}
     saveCloudSiteContent('header', normalized).catch(e => console.warn('Cloud sync header config notice:', e));
+
+    if (normalized.logoImageUrl !== undefined) {
+      setFooterConfig(prev => {
+        if (prev.logoImageUrl === normalized.logoImageUrl && prev.logoIcon === normalized.logoIcon) return prev;
+        const nextFooter = {
+          ...prev,
+          logoImageUrl: normalized.logoImageUrl,
+          logoIcon: normalized.logoIcon || prev.logoIcon
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_footer`, JSON.stringify(nextFooter));
+        } catch (_) {}
+        saveCloudSiteContent('footer', nextFooter).catch(() => {});
+        return nextFooter;
+      });
+
+      setCompanyDetails(prev => {
+        if (prev.logoUrl === normalized.logoImageUrl) return prev;
+        const nextComp = {
+          ...prev,
+          logoUrl: normalized.logoImageUrl,
+          logoType: normalized.logoImageUrl ? ('custom_image' as const) : prev.logoType
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(nextComp));
+        } catch (_) {}
+        saveCloudSiteContent('company_details', nextComp).catch(() => {});
+        return nextComp;
+      });
+
+      setAdminSettings(prev => {
+        if (prev.companyLogo === normalized.logoImageUrl && prev.brandName === (normalized.brandName || prev.brandName)) return prev;
+        const nextSettings = {
+          ...prev,
+          companyLogo: normalized.logoImageUrl,
+          logoUrl: normalized.logoImageUrl,
+          brandName: normalized.brandName || prev.brandName,
+          brandTagline: normalized.brandTagline || prev.brandTagline
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(nextSettings));
+        } catch (_) {}
+        saveCloudSiteContent('settings', nextSettings).catch(() => {});
+        return nextSettings;
+      });
+    }
   };
 
   const updateFooterConfig = (config: FooterCustomizationConfig) => {
     const normalized = normalizeFooterConfig(config);
     setFooterConfig(normalized);
+    try {
+      localStorage.setItem(`${LOCAL_STORAGE_KEY}_footer`, JSON.stringify(normalized));
+    } catch (_) {}
     saveCloudSiteContent('footer', normalized).catch(e => console.warn('Cloud sync footer config notice:', e));
+
+    if (normalized.logoImageUrl !== undefined) {
+      setHeaderConfig(prev => {
+        if (prev.logoImageUrl === normalized.logoImageUrl && prev.logoIcon === normalized.logoIcon) return prev;
+        const nextHeader = {
+          ...prev,
+          logoImageUrl: normalized.logoImageUrl,
+          logoIcon: normalized.logoIcon || prev.logoIcon
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_header`, JSON.stringify(nextHeader));
+        } catch (_) {}
+        saveCloudSiteContent('header', nextHeader).catch(() => {});
+        return nextHeader;
+      });
+
+      setCompanyDetails(prev => {
+        if (prev.logoUrl === normalized.logoImageUrl) return prev;
+        const nextComp = {
+          ...prev,
+          logoUrl: normalized.logoImageUrl,
+          logoType: normalized.logoImageUrl ? ('custom_image' as const) : prev.logoType
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(nextComp));
+        } catch (_) {}
+        saveCloudSiteContent('company_details', nextComp).catch(() => {});
+        return nextComp;
+      });
+
+      setAdminSettings(prev => {
+        if (prev.companyLogo === normalized.logoImageUrl) return prev;
+        const nextSettings = {
+          ...prev,
+          companyLogo: normalized.logoImageUrl,
+          logoUrl: normalized.logoImageUrl,
+          brandName: normalized.brandName || prev.brandName
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(nextSettings));
+        } catch (_) {}
+        saveCloudSiteContent('settings', nextSettings).catch(() => {});
+        return nextSettings;
+      });
+    }
   };
 
   const resetHeaderFooterConfig = () => {
@@ -1449,6 +1607,51 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(updated));
     } catch (_) {}
     await saveCloudSiteContent('company_details', updated);
+
+    // If logo was updated in company details, automatically sync to header, footer, and admin settings!
+    if (details.logoUrl !== undefined) {
+      setHeaderConfig(prev => {
+        if (prev.logoImageUrl === details.logoUrl) return prev;
+        const nextHeader = {
+          ...prev,
+          logoImageUrl: details.logoUrl,
+          logoType: details.logoUrl ? ('image' as const) : prev.logoType
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_header`, JSON.stringify(nextHeader));
+        } catch (_) {}
+        saveCloudSiteContent('header', nextHeader).catch(() => {});
+        return nextHeader;
+      });
+
+      setFooterConfig(prev => {
+        if (prev.logoImageUrl === details.logoUrl) return prev;
+        const nextFooter = {
+          ...prev,
+          logoImageUrl: details.logoUrl,
+          logoType: details.logoUrl ? ('image' as const) : prev.logoType
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_footer`, JSON.stringify(nextFooter));
+        } catch (_) {}
+        saveCloudSiteContent('footer', nextFooter).catch(() => {});
+        return nextFooter;
+      });
+
+      setAdminSettings(prev => {
+        if (prev.companyLogo === details.logoUrl && prev.logoUrl === details.logoUrl) return prev;
+        const nextSettings = {
+          ...prev,
+          companyLogo: details.logoUrl,
+          logoUrl: details.logoUrl
+        };
+        try {
+          localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(nextSettings));
+        } catch (_) {}
+        saveCloudSiteContent('settings', nextSettings).catch(() => {});
+        return nextSettings;
+      });
+    }
   };
 
   // =========================================================================
@@ -2338,30 +2541,69 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return newAsset;
   }, []);
 
-  const applyDriveAssetToLogo = useCallback(async (url: string) => {
+  const updateAppLogo = useCallback(async (url: string, iconName?: string) => {
     setHeaderConfig(prev => {
       const updated = {
         ...prev,
         logoImageUrl: url,
-        logoType: 'image' as const,
-        logoUrl: url
+        logoType: url ? ('image' as const) : prev.logoType,
+        logoIcon: iconName || prev.logoIcon
       };
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_header`, JSON.stringify(updated));
+      } catch (_) {}
       saveCloudSiteContent('header', updated).catch(() => {});
       return updated;
     });
 
+    setFooterConfig(prev => {
+      const updated = {
+        ...prev,
+        logoImageUrl: url,
+        logoType: url ? ('image' as const) : prev.logoType,
+        logoIcon: iconName || prev.logoIcon
+      };
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_footer`, JSON.stringify(updated));
+      } catch (_) {}
+      saveCloudSiteContent('footer', updated).catch(() => {});
+      return updated;
+    });
+
     setCompanyDetails(prev => {
-      const updated = { ...prev, logoUrl: url };
+      const updated = {
+        ...prev,
+        logoUrl: url,
+        logoType: url ? ('custom_image' as const) : prev.logoType,
+        updatedAt: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_company_details`, JSON.stringify(updated));
+      } catch (_) {}
       saveCloudSiteContent('company_details', updated).catch(() => {});
       return updated;
     });
 
     setAdminSettings(prev => {
-      const updated = { ...prev, companyLogo: url };
+      const updated = {
+        ...prev,
+        companyLogo: url,
+        logoUrl: url
+      };
+      try {
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_settings`, JSON.stringify(updated));
+      } catch (_) {}
       saveCloudSiteContent('settings', updated).catch(() => {});
       return updated;
     });
   }, []);
+
+  const applyDriveAssetToLogo = useCallback(async (url: string) => {
+    await updateAppLogo(url);
+  }, [updateAppLogo]);
+
+  const appLogoUrl = headerConfig.logoImageUrl || companyDetails.logoUrl || adminSettings.companyLogo || adminSettings.logoUrl || '';
+  const appLogoIcon = headerConfig.logoIcon || footerConfig.logoIcon || 'Flame';
 
   const applyDriveAssetToBanner = useCallback(async (url: string, heading?: string) => {
     setHomeContent(prev => {
@@ -2546,6 +2788,9 @@ export const StoreProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         applyDriveAssetToLogo,
         applyDriveAssetToBanner,
         applyDriveAssetToProduct,
+        appLogoUrl,
+        appLogoIcon,
+        updateAppLogo,
         resetAllData,
         resetToDefaultData: resetAllData
       }}

@@ -44,7 +44,7 @@ const AVAILABLE_TABS: { value: AppTab; label: string }[] = [
 ];
 
 export const FooterCustomizer: React.FC = () => {
-  const { footerConfig, updateFooterConfig, adminSettings, aboutContent } = useStore();
+  const { footerConfig, updateFooterConfig, adminSettings, aboutContent, appLogoUrl, appLogoIcon, updateAppLogo } = useStore();
   const [formData, setFormData] = useState<FooterCustomizationConfig>(() => normalizeFooterConfig(footerConfig || initialFooterConfig));
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
@@ -298,9 +298,17 @@ export const FooterCustomizer: React.FC = () => {
           <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-amber-500 flex items-center justify-center text-stone-950">
-                  <Flame className="w-3.5 h-3.5" />
-                </div>
+                {(formData.logoImageUrl || appLogoUrl) ? (
+                  <img 
+                    src={formData.logoImageUrl || appLogoUrl} 
+                    alt={formData.brandName || adminSettings.brandName} 
+                    className="w-6 h-6 rounded object-cover border border-amber-500/40"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded bg-amber-500 flex items-center justify-center text-stone-950">
+                    <Flame className="w-3.5 h-3.5" />
+                  </div>
+                )}
                 <strong className="font-cinzel text-stone-100 font-bold">{formData.brandName || adminSettings.brandName}</strong>
               </div>
               <p className="text-[11px] text-stone-400 line-clamp-3">
@@ -426,10 +434,68 @@ export const FooterCustomizer: React.FC = () => {
           <div className="bg-stone-900 border border-stone-800 rounded-2xl p-6 space-y-4">
             <h3 className="text-sm font-serif font-bold text-stone-100 uppercase tracking-wider flex items-center gap-2">
               <Flame className="w-4 h-4 text-amber-400" />
-              <span>Brand Lore & Trust Badges</span>
+              <span>Brand Identity & Trust Badges</span>
             </h3>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Footer Logo & App-wide Sync */}
+              <div className="p-3.5 bg-stone-950/80 border border-stone-800 rounded-xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-amber-400">Footer Logo Configuration</span>
+                  {appLogoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, logoImageUrl: appLogoUrl }))}
+                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold underline cursor-pointer"
+                    >
+                      Use App-Wide Logo
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-stone-900 border border-amber-500/30 flex items-center justify-center overflow-hidden shrink-0">
+                    {(formData.logoImageUrl || appLogoUrl) ? (
+                      <img 
+                        src={formData.logoImageUrl || appLogoUrl} 
+                        alt="Logo Preview" 
+                        className="w-full h-full object-cover p-1"
+                      />
+                    ) : (
+                      <Flame className="w-5 h-5 text-amber-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-[10px] font-semibold text-stone-400 mb-1">Logo Image URL</label>
+                    <input
+                      type="url"
+                      value={formData.logoImageUrl || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, logoImageUrl: e.target.value }))}
+                      className="w-full px-3 py-1.5 bg-stone-900 border border-stone-700 rounded-lg text-xs text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-500"
+                      placeholder="https://... or paste image URL"
+                    />
+                  </div>
+                </div>
+
+                {formData.logoImageUrl && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (formData.logoImageUrl) {
+                          await updateAppLogo(formData.logoImageUrl);
+                          setSaveStatus('Logo synchronized across Header, Footer, and Login/Signup screens!');
+                          setTimeout(() => setSaveStatus(null), 3500);
+                        }
+                      }}
+                      className="text-xs px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 font-semibold rounded-lg transition cursor-pointer"
+                    >
+                      Sync as Global App Logo
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-stone-400 mb-1">Footer Brand Description</label>
                 <textarea

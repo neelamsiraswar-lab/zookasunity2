@@ -55,6 +55,8 @@ export const Navbar: React.FC = () => {
     homeContent,
     adminSettings,
     headerConfig,
+    appLogoUrl,
+    appLogoIcon,
     customer,
     isCustomerLoggedIn,
     openAuthModal,
@@ -70,9 +72,9 @@ export const Navbar: React.FC = () => {
   const [showAccountMenu, setShowAccountMenu] = useState<boolean>(false);
 
   const effectiveHeader = normalizeHeaderConfig(headerConfig);
-
+  const effectiveLogoUrl = effectiveHeader.logoImageUrl || appLogoUrl;
   const visibleNavItems = (effectiveHeader.navItems || []).filter(item => item.visible !== false);
-  const BrandIcon = getHeaderIcon(effectiveHeader.logoIcon);
+  const BrandIcon = getHeaderIcon(effectiveHeader.logoIcon || appLogoIcon);
 
   const handleNavClick = (tab: AppTab) => {
     setActiveTab(tab);
@@ -118,9 +120,9 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-3 text-left group cursor-pointer"
             id="brand-logo-button"
           >
-            {effectiveHeader.logoImageUrl ? (
+            {effectiveLogoUrl ? (
               <img 
-                src={effectiveHeader.logoImageUrl} 
+                src={effectiveLogoUrl} 
                 alt={effectiveHeader.brandName || adminSettings.brandName} 
                 className="w-10 h-10 rounded-xl object-cover border border-amber-400/40 shadow-lg shadow-amber-950/50 group-hover:scale-105 transition"
               />
@@ -427,6 +429,29 @@ export const Navbar: React.FC = () => {
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-stone-800 bg-stone-950/98 px-4 pt-3 pb-6 space-y-2 shadow-2xl">
+          {/* Mobile Drawer Brand Header */}
+          <div className="flex items-center gap-3 pb-3 mb-2 border-b border-stone-800/80 px-2">
+            {effectiveLogoUrl ? (
+              <img 
+                src={effectiveLogoUrl} 
+                alt={effectiveHeader.brandName || adminSettings.brandName} 
+                className="w-8 h-8 rounded-lg object-cover border border-amber-400/40"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-amber-800 flex items-center justify-center border border-amber-400/40">
+                <BrandIcon className="w-4 h-4 text-stone-950" />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <span className="font-cinzel text-sm font-bold tracking-wider text-stone-100 uppercase truncate block leading-tight">
+                {effectiveHeader.brandName || adminSettings.brandName}
+              </span>
+              <span className="text-[10px] tracking-widest text-amber-400/90 uppercase font-medium truncate block">
+                {effectiveHeader.brandTagline || 'Artisanal Distillery'}
+              </span>
+            </div>
+          </div>
+
           {visibleNavItems.map((link) => {
             const Icon = getHeaderIcon(link.iconName);
             const isActive = activeTab === link.tab;

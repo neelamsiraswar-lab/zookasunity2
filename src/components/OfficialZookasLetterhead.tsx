@@ -1,5 +1,6 @@
 import React from 'react';
 import { ZookasOfficialCrest } from './ZookasOfficialCrest';
+import { LetterheadWatermarkDisplay } from './LetterheadWatermarkDisplay';
 import { Globe, Phone, Mail } from 'lucide-react';
 import { CompanyDetails } from '../types';
 
@@ -83,13 +84,7 @@ export const OfficialZookasLetterhead: React.FC<OfficialZookasLetterheadProps> =
       {/* ======================================================== */}
       {/* CENTER WATERMARK                                         */}
       {/* ======================================================== */}
-      {showWatermark && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
-          <div className="opacity-[0.05] grayscale contrast-125 transform scale-125 sm:scale-150">
-            <ZookasOfficialCrest size={400} variant="watermark" showText={true} />
-          </div>
-        </div>
-      )}
+      {showWatermark && <LetterheadWatermarkDisplay companyDetails={companyDetails} />}
 
       {/* ======================================================== */}
       {/* HEADER SECTION (EXACT 1:1 REPLICA OF OFFICIAL LETTERHEAD) */}

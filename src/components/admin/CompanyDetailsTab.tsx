@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../context/StoreContext';
 import { CompanyDetails } from '../../types';
 import { CloudImageUploader } from '../CloudImageUploader';
+import { LetterheadWatermarkDisplay } from '../LetterheadWatermarkDisplay';
 import { initialCompanyDetails } from '../../data/initialLetterheadData';
 import {
   Building2,
@@ -627,6 +628,292 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ onGoToComp
               </label>
             </div>
           </div>
+
+          {/* Section 7: Letterhead Watermark Configuration */}
+          <div className="bg-stone-900/90 border border-stone-800 rounded-xl p-4 sm:p-5 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-stone-800">
+              <div className="flex items-center gap-2">
+                <Stamp className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-semibold text-stone-200 uppercase tracking-wide">
+                  7. Letterhead Watermark Configuration
+                </h3>
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                Security & Branding
+              </span>
+            </div>
+
+            <p className="text-xs text-stone-400 leading-relaxed">
+              Configure the subtle background security and branding watermark displayed behind official letterheads, invoices, tasting certificates, and dispatch documents.
+            </p>
+
+            {/* Master Toggle: Show Watermark on Letterhead */}
+            <div className="p-3.5 bg-stone-950 border border-stone-800 rounded-lg flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="text-xs font-semibold text-stone-200">
+                  Enable Watermark on Letterheads
+                </div>
+                <div className="text-[11px] text-stone-500">
+                  Render an authentic archival watermark layer behind text content, tables, and print exports
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.showWatermarkOnLetterhead ?? true}
+                  onChange={e => handleFieldChange('showWatermarkOnLetterhead', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-10 h-5.5 bg-stone-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:bg-amber-600"></div>
+              </label>
+            </div>
+
+            {(formData.showWatermarkOnLetterhead ?? true) && (
+              <div className="space-y-4 pt-1">
+                {/* Watermark Type Selector */}
+                <div>
+                  <label className="block text-xs font-medium text-stone-300 mb-2">
+                    Watermark Graphic Style
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {[
+                      {
+                        type: 'distillery_crest',
+                        label: 'Distillery Crest',
+                        desc: 'Official gold & bronze insignia with crown and wings',
+                        icon: Crown
+                      },
+                      {
+                        type: 'company_logo',
+                        label: 'Header Logo',
+                        desc: 'Uses uploaded brand logo as watermark',
+                        icon: ImageIcon
+                      },
+                      {
+                        type: 'custom_image',
+                        label: 'Custom Emblem',
+                        desc: 'Upload dedicated monogram or mark',
+                        icon: Sparkles
+                      },
+                      {
+                        type: 'custom_text',
+                        label: 'Custom Text',
+                        desc: 'Centered / diagonal corporate typography',
+                        icon: FileText
+                      },
+                      {
+                        type: 'authenticated_seal',
+                        label: 'Archival Seal',
+                        desc: 'Circular verified archive seal',
+                        icon: ShieldCheck
+                      },
+                      {
+                        type: 'cask_barrel_stamp',
+                        label: 'Bonded Cask Stamp',
+                        desc: 'Perpetual cask deed cellar mark',
+                        icon: Wine
+                      }
+                    ].map(opt => {
+                      const IconComp = opt.icon;
+                      const isSelected = (formData.watermarkType ?? 'distillery_crest') === opt.type;
+                      return (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          onClick={() => handleFieldChange('watermarkType', opt.type as any)}
+                          className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                            isSelected
+                              ? 'bg-amber-950/40 border-amber-500 text-amber-200 ring-1 ring-amber-500/50'
+                              : 'bg-stone-950 border-stone-800 text-stone-400 hover:border-stone-700 hover:text-stone-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-400' : 'text-stone-500'}`} />
+                            <span className="text-xs font-semibold leading-tight">{opt.label}</span>
+                          </div>
+                          <span className="text-[10px] text-stone-500 leading-tight">
+                            {opt.desc}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Conditional Field: Custom Text Input */}
+                {formData.watermarkType === 'custom_text' && (
+                  <div className="p-3 bg-stone-950 border border-stone-800 rounded-lg space-y-2">
+                    <label className="block text-xs font-medium text-stone-300">
+                      Watermark Display Text
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.watermarkText || ''}
+                      onChange={e => handleFieldChange('watermarkText', e.target.value)}
+                      placeholder={formData.companyName || 'ZOOKAS UNITY BLENDERS'}
+                      className="w-full px-3 py-2 bg-stone-900 border border-stone-700 rounded-lg text-xs sm:text-sm text-stone-200 placeholder-stone-600 focus:outline-none focus:border-amber-500 uppercase tracking-widest"
+                    />
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {['ZOOKAS UNITY BLENDERS', 'CONFIDENTIAL', 'OFFICIAL ARCHIVE', 'ORIGINAL COPY', 'DISTILLERY BONDED'].map(phrase => (
+                        <button
+                          key={phrase}
+                          type="button"
+                          onClick={() => handleFieldChange('watermarkText', phrase)}
+                          className="text-[10px] px-2 py-0.5 bg-stone-900 border border-stone-700 hover:border-amber-600 text-stone-400 hover:text-amber-300 rounded cursor-pointer transition-colors"
+                        >
+                          {phrase}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Conditional Field: Custom Image Uploader */}
+                {formData.watermarkType === 'custom_image' && (
+                  <div className="p-3 bg-stone-950 border border-stone-800 rounded-lg space-y-3">
+                    <CloudImageUploader
+                      currentImageUrl={formData.watermarkImageUrl}
+                      onImageUploaded={url => handleFieldChange('watermarkImageUrl', url)}
+                      label="Upload Custom Watermark Emblem (PNG with transparency recommended)"
+                      presetOptions={[
+                        {
+                          label: 'Distillery Vintage Emblem',
+                          url: 'https://images.unsplash.com/photo-1527061011665-3652c757a4d4?auto=format&fit=crop&w=400&q=80'
+                        },
+                        {
+                          label: 'Oak Cask Cellar Monogram',
+                          url: 'https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&w=400&q=80'
+                        }
+                      ]}
+                    />
+                  </div>
+                )}
+
+                {/* Watermark Adjustments (Opacity, Size, Rotation, Alignment) */}
+                <div className="p-3.5 bg-stone-950 border border-stone-800 rounded-lg space-y-3.5">
+                  <div className="text-xs font-semibold text-stone-300 flex items-center justify-between">
+                    <span>Watermark Display Fine-Tuning</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleFieldChange('watermarkOpacity', 0.045);
+                        handleFieldChange('watermarkSize', 380);
+                        handleFieldChange('watermarkRotation', 0);
+                        handleFieldChange('watermarkPosition', 'center');
+                      }}
+                      className="text-[10px] text-amber-500 hover:text-amber-400 hover:underline cursor-pointer"
+                    >
+                      Reset to Defaults
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Opacity Slider */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-stone-400">
+                        <span>Watermark Opacity:</span>
+                        <span className="font-mono text-amber-400 font-bold">
+                          {Math.round(((formData.watermarkOpacity ?? 0.045) * 100) * 10) / 10}%
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0.01"
+                        max="0.20"
+                        step="0.005"
+                        value={formData.watermarkOpacity ?? 0.045}
+                        onChange={e => handleFieldChange('watermarkOpacity', parseFloat(e.target.value))}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-stone-600">
+                        <span>Faint (1%)</span>
+                        <span>Balanced (4.5%)</span>
+                        <span>Bold (20%)</span>
+                      </div>
+                    </div>
+
+                    {/* Size Slider */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-stone-400">
+                        <span>Watermark Size:</span>
+                        <span className="font-mono text-amber-400 font-bold">
+                          {formData.watermarkSize || 380}px
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="180"
+                        max="550"
+                        step="10"
+                        value={formData.watermarkSize || 380}
+                        onChange={e => handleFieldChange('watermarkSize', parseInt(e.target.value, 10))}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-stone-600">
+                        <span>Compact (180px)</span>
+                        <span>Full Page (550px)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1 border-t border-stone-800/80">
+                    {/* Rotation Slider */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs text-stone-400">
+                        <span>Watermark Angle / Tilt:</span>
+                        <span className="font-mono text-amber-400 font-bold">
+                          {formData.watermarkRotation ?? 0}°
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="-45"
+                        max="45"
+                        step="5"
+                        value={formData.watermarkRotation ?? 0}
+                        onChange={e => handleFieldChange('watermarkRotation', parseInt(e.target.value, 10))}
+                        className="w-full accent-amber-500 cursor-pointer"
+                      />
+                      <div className="flex justify-between text-[10px] text-stone-600">
+                        <span>-45°</span>
+                        <span>0° (Straight)</span>
+                        <span>+45°</span>
+                      </div>
+                    </div>
+
+                    {/* Position */}
+                    <div className="space-y-1.5">
+                      <div className="text-xs text-stone-400">Watermark Alignment:</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange('watermarkPosition', 'center')}
+                          className={`py-1.5 px-3 rounded text-xs font-medium cursor-pointer border text-center transition-all ${
+                            (formData.watermarkPosition || 'center') === 'center'
+                              ? 'bg-amber-950/60 border-amber-500 text-amber-200'
+                              : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-200'
+                          }`}
+                        >
+                          Center Page
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange('watermarkPosition', 'bottom_right')}
+                          className={`py-1.5 px-3 rounded text-xs font-medium cursor-pointer border text-center transition-all ${
+                            formData.watermarkPosition === 'bottom_right'
+                              ? 'bg-amber-950/60 border-amber-500 text-amber-200'
+                              : 'bg-stone-900 border-stone-800 text-stone-400 hover:text-stone-200'
+                          }`}
+                        >
+                          Bottom Corner
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ========================================================================= */}
@@ -685,12 +972,8 @@ export const CompanyDetailsTab: React.FC<CompanyDetailsTabProps> = ({ onGoToComp
               <div className="absolute top-2 left-2 text-amber-800/40 text-xs">✦</div>
               <div className="absolute top-2 right-2 text-amber-800/40 text-xs">✦</div>
 
-              {/* Watermark preview */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-5">
-                <span className="font-serif font-black text-6xl tracking-widest uppercase text-amber-900">
-                  {formData.tradeName || 'ZOOKAS'}
-                </span>
-              </div>
+              {/* Dynamic Letterhead Watermark Preview */}
+              <LetterheadWatermarkDisplay companyDetails={formData} />
 
               {/* HEADER CONTENT */}
               {(formData.headerLogoLayout ?? 'left_aligned_row') === 'left_aligned_row' ? (

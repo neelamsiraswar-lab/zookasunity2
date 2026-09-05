@@ -500,7 +500,162 @@ export const initialCustomer: CustomerUser | null = null;
 
 export const demoCustomers: CustomerUser[] = [];
 
-export const initialOrders: Order[] = [];
+export const initialOrders: Order[] = [
+  {
+    id: 'ord-1001',
+    orderNumber: 'ZUS-2026-8821',
+    date: '2026-09-03T14:32:00.000Z',
+    status: 'Distillery Packing',
+    customerName: 'Lord Alistair Sterling',
+    customerEmail: 'sterling.cask@highlandestate.co.uk',
+    customerPhone: '+44 7911 123456',
+    customerId: 'cust-101',
+    shippingAddress: {
+      id: 'addr-101',
+      fullName: 'Lord Alistair Sterling',
+      street: '42 Royal Crescent, Penthouse B',
+      city: 'Edinburgh',
+      state: 'Midlothian',
+      zipCode: 'EH3 6EU',
+      country: 'United Kingdom',
+      phone: '+44 7911 123456',
+      isDefault: true
+    },
+    items: [
+      {
+        product: initialProducts[0],
+        quantity: 2,
+        giftBox: true,
+        customEngraving: 'Sterling Reserve 2026'
+      },
+      {
+        product: initialProducts[1],
+        quantity: 1,
+        giftBox: true,
+        customEngraving: 'Master Cellar Edition'
+      }
+    ],
+    subtotal: 46800,
+    discount: 0,
+    giftBoxFee: 3000,
+    shipping: 0,
+    tax: 4212,
+    total: 54012,
+    payment: {
+      type: 'card',
+      cardLast4: '8821',
+      cardBrand: 'Private Reserve Amex',
+      transactionId: 'txn_live_982141_sterling',
+      paidAt: '2026-09-03T14:32:05.000Z'
+    },
+    trackingNumber: 'ZUS-EXP-99214081',
+    carrier: 'Spirits Express Priority Courier (Adult 21+ Required)',
+    ageConfirmed: true,
+    loyaltyPointsEarned: 540,
+    loyaltyPointsUsed: 0,
+    notes: 'Please pack in cedar bonded wood crate with brass wax seal ribbon.'
+  },
+  {
+    id: 'ord-1002',
+    orderNumber: 'ZUS-2026-7419',
+    date: '2026-09-04T09:15:00.000Z',
+    status: 'Batch Sealed',
+    customerName: 'Dr. Elena Rostova',
+    customerEmail: 'elena.rostova@genevavault.ch',
+    customerPhone: '+41 22 819 4500',
+    customerId: 'cust-102',
+    shippingAddress: {
+      id: 'addr-102',
+      fullName: 'Dr. Elena Rostova',
+      street: '14 Rue du Rhône, Suite 400',
+      city: 'Geneva',
+      state: 'GE',
+      zipCode: '1204',
+      country: 'Switzerland',
+      phone: '+41 22 819 4500',
+      isDefault: true
+    },
+    items: [
+      {
+        product: initialProducts[0],
+        quantity: 1,
+        giftBox: false
+      },
+      {
+        product: initialProducts[2],
+        quantity: 3,
+        giftBox: false
+      }
+    ],
+    subtotal: 32900,
+    discount: 1500,
+    giftBoxFee: 0,
+    shipping: 1200,
+    tax: 2934,
+    total: 35534,
+    payment: {
+      type: 'card',
+      cardLast4: '4190',
+      cardBrand: 'Swiss Private Visa',
+      transactionId: 'txn_live_741902_rostova',
+      paidAt: '2026-09-04T09:15:12.000Z'
+    },
+    trackingNumber: 'ZUS-EXP-66321904',
+    carrier: 'Bonded Cellar European Freight (Temperature Controlled)',
+    ageConfirmed: true,
+    loyaltyPointsEarned: 355,
+    loyaltyPointsUsed: 1500,
+    notes: 'Deliver to private cellar security reception.'
+  },
+  {
+    id: 'ord-1003',
+    orderNumber: 'ZUS-2026-6102',
+    date: '2026-09-04T18:40:00.000Z',
+    status: 'Dispatched',
+    customerName: 'Marcus Vance, Master Sommelier',
+    customerEmail: 'marcus.vance@beverlyhillsclub.com',
+    customerPhone: '+1 (310) 555-0198',
+    customerId: 'cust-103',
+    shippingAddress: {
+      id: 'addr-103',
+      fullName: 'Marcus Vance',
+      street: '9641 Sunset Boulevard',
+      city: 'Beverly Hills',
+      state: 'CA',
+      zipCode: '90210',
+      country: 'United States',
+      phone: '+1 (310) 555-0198',
+      isDefault: true
+    },
+    items: [
+      {
+        product: initialProducts[1],
+        quantity: 2,
+        giftBox: true,
+        customEngraving: 'Vance Cellar Selection'
+      }
+    ],
+    subtotal: 19600,
+    discount: 0,
+    giftBoxFee: 2000,
+    shipping: 1500,
+    tax: 1845,
+    total: 24945,
+    payment: {
+      type: 'card',
+      cardLast4: '6102',
+      cardBrand: 'Mastercard Reserve Black',
+      transactionId: 'txn_live_610238_vance',
+      paidAt: '2026-09-04T18:40:20.000Z'
+    },
+    trackingNumber: 'ZUS-EXP-54128963',
+    carrier: 'FedEx Priority Adult Signature 21+',
+    ageConfirmed: true,
+    loyaltyPointsEarned: 249,
+    loyaltyPointsUsed: 0,
+    notes: 'Signature on delivery required by Beverly Hills Club sommelier.'
+  }
+];
 
 export const initialBlogPosts: BlogPost[] = [
   {
@@ -956,6 +1111,9 @@ export const initialHeaderConfig: HeaderCustomizationConfig = {
 export const initialFooterConfig: FooterCustomizationConfig = {
   brandName: 'Zookas Unity Spirits',
   brandDescription: 'Artisanal small-batch single malt whiskies, cask-strength bourbons, alpine gins, and aged rums crafted with unhurried devotion to copper pot distillation.',
+  logoImageUrl: '',
+  logoIcon: 'Flame',
+  logoType: 'icon_text',
   showNewsletter: true,
   newsletterHeading: 'Receive First-Access to Limited Single Cask Allocations',
   newsletterSubheading: 'Join our private membership ledger to receive advance tasting notes, invitations to master distiller classes, and instant 10% off your inaugural order.',

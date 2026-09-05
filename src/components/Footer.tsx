@@ -16,8 +16,32 @@ import {
   Twitter,
   Youtube,
   Linkedin,
-  Globe
+  Globe,
+  Wine,
+  Crown,
+  Compass,
+  GlassWater,
+  Building2,
+  BookOpen,
+  User
 } from 'lucide-react';
+
+const getFooterIcon = (iconName?: string) => {
+  switch (iconName) {
+    case 'Wine': return Wine;
+    case 'Building2': return Building2;
+    case 'BookOpen': return BookOpen;
+    case 'User': return User;
+    case 'Sparkles': return Sparkles;
+    case 'ShieldCheck': return ShieldCheck;
+    case 'Compass': return Compass;
+    case 'Crown': return Crown;
+    case 'GlassWater': return GlassWater;
+    case 'Flame':
+    default:
+      return Flame;
+  }
+};
 
 const getSocialIcon = (iconName?: string, platform?: string) => {
   const p = (iconName || platform || '').toLowerCase();
@@ -30,11 +54,13 @@ const getSocialIcon = (iconName?: string, platform?: string) => {
 };
 
 export const Footer: React.FC = () => {
-  const { adminSettings, aboutContent, footerConfig, setActiveTab } = useStore();
+  const { adminSettings, aboutContent, footerConfig, appLogoUrl, appLogoIcon, setActiveTab } = useStore();
   const [newsletterEmail, setNewsletterEmail] = useState<string>('');
   const [subscribed, setSubscribed] = useState<boolean>(false);
 
   const effectiveFooter = normalizeFooterConfig(footerConfig);
+  const effectiveLogoUrl = effectiveFooter.logoImageUrl || appLogoUrl;
+  const BrandIcon = getFooterIcon(effectiveFooter.logoIcon || appLogoIcon);
 
   const handleNewsletter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,12 +142,25 @@ export const Footer: React.FC = () => {
           {/* Brand Col */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-800 flex items-center justify-center border border-amber-400/40">
-                <Flame className="w-5 h-5 text-stone-950" />
+              {effectiveLogoUrl ? (
+                <img 
+                  src={effectiveLogoUrl} 
+                  alt={effectiveFooter.brandName || adminSettings.brandName} 
+                  className="w-11 h-11 rounded-xl object-cover border border-amber-400/40 shadow-lg shadow-amber-950/50"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-800 flex items-center justify-center border border-amber-400/40 shadow-lg shadow-amber-950/50">
+                  <BrandIcon className="w-5 h-5 text-stone-950" />
+                </div>
+              )}
+              <div>
+                <span className="font-cinzel text-lg font-bold tracking-wider text-stone-100 uppercase block leading-tight">
+                  {effectiveFooter.brandName || adminSettings.brandName}
+                </span>
+                <span className="text-[10px] tracking-widest text-amber-400/90 uppercase font-medium">
+                  {adminSettings.brandTagline || 'Artisanal Distillery'}
+                </span>
               </div>
-              <span className="font-cinzel text-lg font-bold tracking-wider text-stone-100 uppercase">
-                {effectiveFooter.brandName || adminSettings.brandName}
-              </span>
             </div>
             <p className="text-sm text-stone-400 leading-relaxed max-w-sm">
               {effectiveFooter.brandDescription || 'Artisanal small-batch single malt whiskies, cask-strength bourbons, alpine gins, and aged rums crafted with unhurried devotion to copper pot distillation.'}

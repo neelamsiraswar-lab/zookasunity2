@@ -386,7 +386,7 @@ export const MediaDriveAdmin: React.FC = () => {
                 <option value="logos">Distillery Logo & Heritage Watermark</option>
                 <option value="banners">Store Hero Carousel Banner</option>
                 <option value="heritage">Heritage Copper Stills & Mash Tun</option>
-                <option value="casks">Cask Tracker & Bond Warehouse</option>
+                <option value="casks">Oak Casks & Bond Warehouse</option>
                 <option value="blog">Editorial & Mixology Story</option>
                 <option value="general">General Asset</option>
               </select>

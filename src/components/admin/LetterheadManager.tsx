@@ -79,6 +79,7 @@ import {
 } from 'lucide-react';
 import { CompanyDetailsTab } from './CompanyDetailsTab';
 import { ZookasOfficialCrest } from '../ZookasOfficialCrest';
+import { LetterheadWatermarkDisplay } from '../LetterheadWatermarkDisplay';
 
 export const LetterheadManager: React.FC = () => {
   const {
@@ -1421,12 +1422,7 @@ export const LetterheadManager: React.FC = () => {
                 </div>
 
                 {/* Subtle Official Watermark Layer */}
-                <div
-                  className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
-                  style={{ opacity: 0.045 }}
-                >
-                  <ZookasOfficialCrest size={340} variant="watermark" showText={true} />
-                </div>
+                <LetterheadWatermarkDisplay companyDetails={companyDetails} />
 
                 {/* Main Content Area */}
                 <div className="relative z-10 flex-1 flex flex-col">
@@ -1907,12 +1903,7 @@ export const LetterheadManager: React.FC = () => {
             </div>
 
             {/* Subtle Official Watermark Layer */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden z-0"
-              style={{ opacity: 0.045 }}
-            >
-              <ZookasOfficialCrest size={380} variant="watermark" showText={true} />
-            </div>
+            <LetterheadWatermarkDisplay companyDetails={companyDetails} />
 
             {/* Main Content Area */}
             <div className="relative z-10 flex-1 flex flex-col">

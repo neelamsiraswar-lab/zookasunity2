@@ -24,7 +24,10 @@ interface AdminAuthLockScreenProps {
 }
 
 export const AdminAuthLockScreen: React.FC<AdminAuthLockScreenProps> = ({ onAuthenticated }) => {
-  const { adminSettings } = useStore();
+  const { adminSettings, headerConfig, companyDetails, appLogoUrl } = useStore();
+  
+  const effectiveLogoUrl = appLogoUrl || headerConfig?.logoImageUrl || companyDetails?.logoUrl || adminSettings?.companyLogo || adminSettings?.logoUrl;
+  const brandName = adminSettings?.brandName || headerConfig?.brandName || companyDetails?.companyName || 'Zookas Unity Spirits';
   
   const currentPassword = adminSettings?.adminPassword || 'zookas2026';
   const currentPin = adminSettings?.adminPin || '8821';
@@ -175,13 +178,19 @@ export const AdminAuthLockScreen: React.FC<AdminAuthLockScreenProps> = ({ onAuth
         {/* Top Vault Crest */}
         <div className="flex flex-col items-center text-center mb-6">
           <div className="relative mb-3">
-            <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center transition-all duration-500 shadow-xl ${
+            <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center transition-all duration-500 shadow-xl overflow-hidden ${
               isSuccess 
                 ? 'bg-emerald-950/80 border-emerald-500 text-emerald-400 scale-110' 
                 : 'bg-stone-950/80 border-amber-500/40 text-amber-400'
             }`}>
               {isSuccess ? (
                 <Unlock className="w-8 h-8 animate-pulse text-emerald-400" />
+              ) : effectiveLogoUrl ? (
+                <img 
+                  src={effectiveLogoUrl} 
+                  alt={brandName} 
+                  className="w-full h-full object-cover p-1"
+                />
               ) : (
                 <ShieldCheck className="w-8 h-8 text-amber-400" />
               )}
@@ -198,7 +207,7 @@ export const AdminAuthLockScreen: React.FC<AdminAuthLockScreenProps> = ({ onAuth
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-semibold tracking-wider uppercase mb-2">
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>Zookas Unity Spirits</span>
+            <span>{brandName}</span>
           </div>
 
           <h2 className="text-xl sm:text-2xl font-serif font-bold text-stone-100 tracking-tight">

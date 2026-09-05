@@ -24,8 +24,16 @@ export const CustomerAuthModal: React.FC = () => {
     authModalInitialTab, 
     loginCustomer, 
     registerCustomer,
+    adminSettings,
+    headerConfig,
+    companyDetails,
+    appLogoUrl,
+    appLogoIcon,
     setActiveTab: setAppActiveTab
   } = useStore();
+
+  const effectiveLogoUrl = appLogoUrl || headerConfig?.logoImageUrl || companyDetails?.logoUrl || adminSettings?.companyLogo || adminSettings?.logoUrl;
+  const brandName = adminSettings?.brandName || headerConfig?.brandName || companyDetails?.companyName || 'Zookas Unity Spirits';
 
   const handleAdminCmsClick = () => {
     closeAuthModal();
@@ -159,15 +167,23 @@ export const CustomerAuthModal: React.FC = () => {
           {/* Modal Header */}
           <div className="p-6 pb-4 flex items-start justify-between border-b border-stone-800/80 bg-stone-950/60">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                <Wine className="w-5 h-5" />
-              </div>
+              {effectiveLogoUrl ? (
+                <img 
+                  src={effectiveLogoUrl} 
+                  alt={brandName} 
+                  className="w-11 h-11 rounded-2xl object-cover border border-amber-500/40 shadow-md shadow-amber-950/50"
+                />
+              ) : (
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Wine className="w-5 h-5" />
+                </div>
+              )}
               <div>
                 <h3 className="font-serif text-xl font-bold text-stone-100">
                   Patron Cellar Portal
                 </h3>
                 <p className="text-xs text-stone-400">
-                  Access small-batch allocations, saved addresses & order history
+                  {brandName} • Allocations & order history
                 </p>
               </div>
             </div>

@@ -28,9 +28,16 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
     loginWithGoogle, 
     registerCustomer, 
     adminSettings,
+    headerConfig,
+    companyDetails,
+    appLogoUrl,
     setAgeVerified,
     setActiveTab
   } = useStore();
+
+  const effectiveLogoUrl = appLogoUrl || headerConfig?.logoImageUrl || companyDetails?.logoUrl || adminSettings?.companyLogo || adminSettings?.logoUrl;
+  const effectiveBrandName = adminSettings?.brandName || headerConfig?.brandName || companyDetails?.companyName || 'ZOOKAS UNITY SPIRITS';
+  const effectiveBrandTagline = adminSettings?.brandTagline || headerConfig?.brandTagline || companyDetails?.brandTagline || 'Est. 2026 • Artisanal Cask Bottling';
 
   const handleAdminCms = () => {
     if (onAdminClick) {
@@ -176,14 +183,22 @@ export const AuthView: React.FC<AuthViewProps> = ({ onAdminClick }) => {
 
       {/* Top Brand Banner */}
       <header className="w-full pt-8 pb-4 px-4 flex flex-col items-center justify-center text-center relative z-10">
-        <div className="mb-3 transform hover:scale-105 transition-transform duration-300">
-          <ZookasOfficialCrest size={80} variant="gold" showText={false} />
+        <div className="mb-3 transform hover:scale-105 transition-transform duration-300 flex justify-center">
+          {effectiveLogoUrl ? (
+            <img 
+              src={effectiveLogoUrl} 
+              alt={effectiveBrandName}
+              className="h-20 sm:h-24 w-auto max-w-[220px] object-contain rounded-2xl p-1.5 bg-stone-900/90 border border-amber-500/40 shadow-xl shadow-amber-950/60"
+            />
+          ) : (
+            <ZookasOfficialCrest size={80} variant="gold" showText={false} />
+          )}
         </div>
         <h1 className="font-serif text-2xl sm:text-3xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 uppercase">
-          ZOOKAS UNITY SPIRITS
+          {effectiveBrandName}
         </h1>
         <p className="text-[11px] sm:text-xs text-amber-500/90 tracking-[0.25em] uppercase font-semibold mt-1">
-          Est. 2026 • Artisanal Cask Bottling
+          {effectiveBrandTagline}
         </p>
         <div className="h-0.5 w-24 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent mt-3" />
       </header>
